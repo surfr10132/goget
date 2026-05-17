@@ -11,6 +11,7 @@ import {
   tokenizeAddress,
   tokenizePhone,
 } from "../security/pii";
+import { resolveRateTokenForBooking } from "./courier-rate-snapshot";
 
 export const orders = new Hono();
 
@@ -126,6 +127,7 @@ async function withOrderCreateIdempotency(
     return c.json(body, 500);
   }
 }
+
 
 async function createMidtransPaymentAttempt(
   orderId: string,
@@ -803,7 +805,7 @@ export async function bookCourierForOrder(
     itemValueIDR: order.quote.item_price_idr,
     itemDescription: order.quote.title,
     tier: rate.tier as any,
-    rateToken: (rate.raw_response as any)?.rateToken,
+    rateToken: resolveRateTokenForBooking(rate.raw_response),
     clientReference: order.short_code,
   });
 
@@ -858,7 +860,6 @@ type OrderWithJoins = {
     geo: unknown;
   };
 };
-
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return "unexpected error";

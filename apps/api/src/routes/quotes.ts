@@ -3,6 +3,7 @@ import { z } from "zod";
 import { compareRates, distanceKm } from "@goget/shared/server";
 import { courierAdapters, supabase } from "../clients";
 import { decryptPII } from "../security/pii";
+import { buildRateSnapshotForStorage } from "./courier-rate-snapshot";
 
 export const quotes = new Hono();
 
@@ -188,7 +189,7 @@ quotes.post("/rates", async c => {
         price_idr: r.priceIDR,
         eta_minutes: r.etaMinutes,
         distance_km: r.distanceKm,
-        raw_response: r.raw as any,
+        raw_response: buildRateSnapshotForStorage(r),
         expires_at: r.expiresAt,
       })),
     );
