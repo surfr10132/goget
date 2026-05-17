@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { gosend, grab, midtrans, supabase } from "../clients";
-import { bookCourierForOrder } from "./orders";
+import { env } from "../env";
+import { enqueueBookCourierJob, processOrderJobs } from "../services/order-jobs";
+import { transitionOrderStatus } from "../services/order-state-machine";
 
 export const webhooks = new Hono();
 
@@ -22,53 +24,119 @@ webhooks.post("/midtrans", async c => {
       external_id: externalId,
       payload: body,
     })
-    .select("id")
+    .select("id, processed_at")
+    .returns<{ id: string; processed_at: string | null }[]>()
     .single();
-  if (dedupe.error?.code === "23505") return c.json({ ok: true, dedup: true });
+  let eventId: string;
+  if (dedupe.error?.code === "23505") {
+    const { data: existing, error: existingError } = await supabase
+      .from("webhook_events")
+      .select("id, processed_at")
+      .eq("provider", "midtrans")
+      .eq("external_id", externalId)
+      .returns<{ id: string; processed_at: string | null }[]>()
+      .single();
+    if (existingError || !existing) {
+      return c.json({ error: existingError?.message ?? "failed to load webhook event" }, 500);
+    }
+    if (existing.processed_at) {
+      return c.json({ ok: true, dedup: true });
+    }
+    eventId = existing.id;
+  } else if (dedupe.error || !dedupe.data) {
+    return c.json({ error: dedupe.error?.message ?? "failed to persist webhook event" }, 500);
+  } else {
+    eventId = dedupe.data.id;
+  }
+  const processedAt = new Date().toISOString();
 
-  await supabase
-    .from("payments")
-    .update({
+  try {
+    const paymentUpdate: Record<string, unknown> = {
       status: verified.status,
       method: verified.method,
-      paid_at: verified.status === "paid" ? new Date().toISOString() : null,
       raw_meta: body,
-    })
-    .eq("provider_order_id", verified.orderId);
+    };
+    if (verified.status === "paid") paymentUpdate.paid_at = processedAt;
 
-  // Update parent order, and if paid -> book the courier.
-  const { data: payment } = await supabase
-    .from("payments")
-    .select("order_id")
-    .eq("provider_order_id", verified.orderId)
-    .single();
+    const { data: payment, error: paymentError } = await supabase
+      .from("payments")
+      .update(paymentUpdate)
+      .eq("provider_order_id", verified.orderId)
+      .select("id, order_id")
+      .returns<{ id: string; order_id: string }[]>()
+      .single();
+    if (paymentError || !payment) {
+      throw new Error(paymentError?.message ?? `payment not found for provider_order_id ${verified.orderId}`);
+    }
 
-  if (payment?.order_id) {
     if (verified.status === "paid") {
-      await supabase.from("orders").update({ status: "paid" }).eq("id", payment.order_id);
-      await supabase.from("order_events").insert({
-        order_id: payment.order_id,
-        status: "paid",
+      await transitionOrderStatus({
+        orderId: payment.order_id,
+        nextStatus: "paid",
         note: `paid via ${verified.method}`,
+        meta: {
+          provider: "midtrans",
+          provider_order_id: verified.orderId,
+          transaction_id: body.transaction_id ?? null,
+        },
       });
-      // Kick off courier booking — fire-and-forget; failures retried by a cron.
-      bookCourierForOrder(payment.order_id, (b, s) => new Response(JSON.stringify(b), { status: s ?? 200 }))
-        .catch(e => console.error("courier book failed", e));
+      await enqueueBookCourierJob(payment.order_id, {
+        source: "midtrans_webhook",
+        provider_order_id: verified.orderId,
+        transaction_id: body.transaction_id ?? null,
+      });
     } else if (verified.status === "failed" || verified.status === "expired") {
-      await supabase.from("orders").update({
-        status: "failed",
-        status_reason: `payment ${verified.status}`,
-      }).eq("id", payment.order_id);
-      await supabase.from("order_events").insert({
-        order_id: payment.order_id,
-        status: "failed",
+      await transitionOrderStatus({
+        orderId: payment.order_id,
+        nextStatus: "failed",
+        statusReason: `payment ${verified.status}`,
         note: `payment ${verified.status}`,
+        meta: {
+          provider: "midtrans",
+          provider_order_id: verified.orderId,
+          transaction_id: body.transaction_id ?? null,
+        },
       });
     }
+
+    await supabase
+      .from("webhook_events")
+      .update({ processed_at: processedAt, error: null })
+      .eq("id", eventId);
+    return c.json({ ok: true });
+  } catch (error) {
+    const message = toErrorMessage(error);
+    await supabase
+      .from("webhook_events")
+      .update({ processed_at: null, error: message })
+      .eq("id", eventId);
+    return c.json({ error: message }, 500);
+  }
+});
+
+/**
+ * POST /webhooks/order-jobs/process
+ * Internal job runner entrypoint for scheduled retries.
+ */
+webhooks.post("/order-jobs/process", async c => {
+  if (!env.ORDER_JOBS_PROCESS_TOKEN) {
+    return c.json({ error: "ORDER_JOBS_PROCESS_TOKEN is not configured" }, 503);
+  }
+  const providedToken = readProcessToken(
+    c.req.header("authorization"),
+    c.req.header("x-order-jobs-token"),
+  );
+  if (providedToken !== env.ORDER_JOBS_PROCESS_TOKEN) {
+    return c.json({ error: "unauthorized" }, 401);
   }
 
-  await supabase.from("webhook_events").update({ processed_at: new Date().toISOString() }).eq("external_id", externalId);
-  return c.json({ ok: true });
+  try {
+    const limit = parseClaimLimit(c.req.query("limit"));
+    const result = await processOrderJobs(limit);
+    return c.json({ ok: true, ...result });
+  } catch (error) {
+    return c.json({ error: toErrorMessage(error) }, 500);
+  }
 });
 
 /**
@@ -135,11 +203,16 @@ async function applyCourierUpdate(
     .eq("id", delivery.id);
 
   if (mapped) {
-    await supabase.from("orders").update({ status: mapped }).eq("id", delivery.order_id);
-    await supabase.from("order_events").insert({
-      order_id: delivery.order_id,
-      status: mapped,
+    await transitionOrderStatus({
+      orderId: delivery.order_id,
+      nextStatus: mapped,
+      statusReason: mapped === "failed" ? `courier ${provider}: ${rawStatus}` : undefined,
       note: `courier ${provider}: ${rawStatus}`,
+      meta: {
+        provider,
+        external_booking_id: externalBookingId,
+        raw_status: rawStatus,
+      },
     });
   }
 }
@@ -152,4 +225,26 @@ function mapCourierStatus(s: string) {
   if (lower.includes("delivered") || lower.includes("completed")) return "delivered" as const;
   if (lower.includes("cancel") || lower.includes("fail")) return "failed" as const;
   return null;
+}
+
+function parseClaimLimit(raw: string | undefined): number {
+  const parsed = Number.parseInt(raw ?? "10", 10);
+  if (!Number.isFinite(parsed)) return 10;
+  return parsed;
+}
+
+function readProcessToken(
+  authorizationHeader: string | undefined,
+  customHeader: string | undefined,
+): string | null {
+  if (customHeader) return customHeader;
+  if (!authorizationHeader) return null;
+  const [scheme, token] = authorizationHeader.split(" ");
+  if (!scheme || !token || scheme.toLowerCase() !== "bearer") return null;
+  return token;
+}
+
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return "unexpected error";
 }

@@ -30,6 +30,7 @@ const Schema = z.object({
   SCRAPER_RATE_LIMIT_MS: z.coerce.number().default(1500),
   PII_ENCRYPTION_SECRET: z.string().min(32),
   PII_TOKENIZATION_SECRET: z.string().optional(),
+  ORDER_JOBS_PROCESS_TOKEN: z.string().optional(),
 });
 
 export const env = Schema.parse(process.env);

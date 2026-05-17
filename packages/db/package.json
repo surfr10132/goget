@@ -1,0 +1,12 @@
+{
+  "name": "@goget/db",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "supabase start",
+    "stop": "supabase stop",
+    "reset": "supabase db reset",
+    "diff": "supabase db diff",
+    "types": "supabase gen types typescript --local"
+  }
+}

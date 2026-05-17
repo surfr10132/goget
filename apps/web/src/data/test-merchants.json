@@ -1,0 +1,1792 @@
+[
+  {
+    "id": "toko-jepang-senayan",
+    "name": "Toko Jepang Senayan",
+    "city": "Jakarta Selatan",
+    "address": "Jl. Asia Afrika, Senayan, Jakarta Selatan",
+    "lat": -6.2181,
+    "lng": 106.8027,
+    "tags": [
+      "jepang",
+      "japan",
+      "matcha",
+      "japanese",
+      "wagashi",
+      "ramen",
+      "miso"
+    ],
+    "items": [
+      {
+        "id": "matcha-uji-100g",
+        "title": "Matcha Bubuk Premium Uji 100g — Ippodo",
+        "description": "Ceremonial-grade matcha from Uji, Kyoto. Imported direct.",
+        "imageUrl": "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400",
+        "priceIDR": 285000,
+        "stock": 8,
+        "tags": [
+          "matcha",
+          "jepang",
+          "japan",
+          "teh"
+        ]
+      },
+      {
+        "id": "matcha-cooking-200g",
+        "title": "Matcha Bubuk Masak 200g — Aoi Matcha",
+        "description": "Culinary grade — baking, lattes, desserts.",
+        "imageUrl": "https://images.unsplash.com/photo-1515823662972-da6a2e4d3002?w=400",
+        "priceIDR": 145000,
+        "stock": 15,
+        "tags": [
+          "matcha",
+          "masak",
+          "baking"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hobby-station-fatmawati",
+    "name": "Hobby Station Fatmawati",
+    "city": "Jakarta Selatan",
+    "address": "Jl. RS Fatmawati No. 12, Cilandak, Jakarta Selatan",
+    "lat": -6.2916,
+    "lng": 106.796,
+    "tags": [
+      "lego",
+      "hobby",
+      "mainan",
+      "toy",
+      "gundam",
+      "model kit",
+      "collectible"
+    ],
+    "items": [
+      {
+        "id": "lego-75355",
+        "title": "LEGO Star Wars 75355 — Ultimate Millennium Falcon",
+        "description": "7,541 pieces. Hard to find. Box sealed.",
+        "imageUrl": "https://images.unsplash.com/photo-1587573089734-09cb69c0f2b4?w=400",
+        "priceIDR": 6499000,
+        "stock": 1,
+        "tags": [
+          "lego",
+          "star wars",
+          "collectible"
+        ]
+      },
+      {
+        "id": "lego-icons-bonsai",
+        "title": "LEGO Icons 10281 — Bonsai Tree",
+        "description": "878 pieces. Rare restock.",
+        "imageUrl": "https://images.unsplash.com/photo-1585366119957-e9730b6d0f60?w=400",
+        "priceIDR": 899000,
+        "stock": 3,
+        "tags": [
+          "lego",
+          "icons",
+          "bonsai",
+          "collectible"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "vinyl-underground-kemang",
+    "name": "Vinyl Underground Kemang",
+    "city": "Jakarta Selatan",
+    "address": "Jl. Kemang Raya No. 45, Jakarta Selatan",
+    "lat": -6.2609,
+    "lng": 106.8141,
+    "tags": [
+      "vinyl",
+      "record",
+      "lp",
+      "musik",
+      "music",
+      "jazz",
+      "rock"
+    ],
+    "items": [
+      {
+        "id": "miles-davis-kind-of-blue",
+        "title": "Miles Davis — Kind of Blue (180g Vinyl Reissue)",
+        "description": "Original Columbia Records reissue. Near mint.",
+        "imageUrl": "https://images.unsplash.com/photo-1603481588273-2f908a9a7a1b?w=400",
+        "priceIDR": 520000,
+        "stock": 2,
+        "tags": [
+          "vinyl",
+          "jazz",
+          "miles davis"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "apotik-herbal-menteng",
+    "name": "Apotek Herbal Menteng",
+    "city": "Jakarta Pusat",
+    "address": "Jl. HOS Cokroaminoto No. 87, Menteng, Jakarta Pusat",
+    "lat": -6.1976,
+    "lng": 106.831,
+    "tags": [
+      "obat",
+      "herbal",
+      "supplement",
+      "vitamin",
+      "apotek",
+      "pharmacy"
+    ],
+    "items": [
+      {
+        "id": "ubiquinol-300mg",
+        "title": "Ubiquinol CoQ10 300mg — Kaneka (60 softgels)",
+        "description": "Active form of CoQ10. Imported. Hard to find locally.",
+        "imageUrl": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400",
+        "priceIDR": 890000,
+        "stock": 5,
+        "tags": [
+          "supplement",
+          "coq10",
+          "vitamin"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "imported-grocery-pondok-indah",
+    "name": "Imported Grocery Pondok Indah",
+    "city": "Jakarta Selatan",
+    "address": "Jl. Metro Pondok Indah No. 6, Jakarta Selatan",
+    "lat": -6.2661,
+    "lng": 106.7878,
+    "tags": [
+      "import",
+      "grocery",
+      "keju",
+      "cheese",
+      "wine",
+      "olive oil"
+    ],
+    "items": [
+      {
+        "id": "parmigiano-reggiano",
+        "title": "Parmigiano Reggiano DOP 24 months — 300g",
+        "description": "Certified authentic. Imported from Emilia-Romagna.",
+        "imageUrl": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a318?w=400",
+        "priceIDR": 385000,
+        "stock": 7,
+        "tags": [
+          "keju",
+          "cheese",
+          "import",
+          "parmigiano"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "toko-teh-bandung",
+    "name": "Toko Teh & Kopi Braga",
+    "city": "Bandung",
+    "address": "Jl. Braga No. 32, Bandung",
+    "lat": -6.9175,
+    "lng": 107.6098,
+    "tags": [
+      "teh",
+      "kopi",
+      "tea",
+      "coffee",
+      "matcha",
+      "sencha",
+      "gyokuro"
+    ],
+    "items": [
+      {
+        "id": "gyokuro-50g",
+        "title": "Gyokuro Jepang Premium 50g — Shaded Green Tea",
+        "description": "Shade-grown 3 weeks before harvest. Sweet, low-astringency.",
+        "imageUrl": "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400",
+        "priceIDR": 320000,
+        "stock": 4,
+        "tags": [
+          "teh",
+          "gyokuro",
+          "jepang",
+          "matcha",
+          "green tea"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "electronic-parts-surabaya",
+    "name": "Komponen Elektronik Surabaya",
+    "city": "Surabaya",
+    "address": "Jl. Genteng Kali No. 78, Surabaya",
+    "lat": -7.2575,
+    "lng": 112.7382,
+    "tags": [
+      "elektronik",
+      "electronic",
+      "arduino",
+      "raspberry pi",
+      "sensor"
+    ],
+    "items": [
+      {
+        "id": "raspberry-pi-5-4gb",
+        "title": "Raspberry Pi 5 — 4GB RAM (Original UK)",
+        "description": "Latest gen. Certified original. Limited stock.",
+        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400",
+        "priceIDR": 1350000,
+        "stock": 3,
+        "tags": [
+          "raspberry pi",
+          "elektronik",
+          "komputer"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hobby-bali-denpasar",
+    "name": "Hobby & Collectibles Bali",
+    "city": "Denpasar",
+    "address": "Jl. Teuku Umar No. 120, Denpasar, Bali",
+    "lat": -8.6705,
+    "lng": 115.2126,
+    "tags": [
+      "lego",
+      "hobby",
+      "collectible",
+      "mainan",
+      "gundam"
+    ],
+    "items": [
+      {
+        "id": "lego-technic-kawasaki",
+        "title": "LEGO Technic 42170 — Kawasaki Ninja H2R",
+        "description": "643 pieces. Officially licensed.",
+        "imageUrl": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
+        "priceIDR": 1149000,
+        "stock": 2,
+        "tags": [
+          "lego",
+          "technic",
+          "motor",
+          "kawasaki"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sparepart-motor-kebon-jeruk",
+    "name": "Toko Sparepart Motor Kebon Jeruk",
+    "city": "Jakarta Barat",
+    "address": "Jl. Panjang No. 54, Kebon Jeruk, Jakarta Barat",
+    "lat": -6.2089,
+    "lng": 106.7659,
+    "tags": [
+      "motor",
+      "scooter",
+      "sparepart",
+      "aki",
+      "battery",
+      "jump",
+      "starter",
+      "kabel",
+      "portable",
+      "otomotif"
+    ],
+    "items": [
+      {
+        "id": "jump-starter-portable-800a",
+        "title": "Portable Jump Starter 800A — Baseus (Motor & Mobil)",
+        "description": "Compact lithium jump starter pack. Works on motorcycles, scooters, and small cars. Built-in powerbank + LED torch.",
+        "imageUrl": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
+        "priceIDR": 549000,
+        "stock": 4,
+        "tags": [
+          "jump starter",
+          "battery",
+          "portable",
+          "scooter",
+          "motor",
+          "aki",
+          "start"
+        ]
+      },
+      {
+        "id": "jump-starter-krisbow-500a",
+        "title": "Portable Emergency Jump Starter 500A — Krisbow",
+        "description": "Indonesian brand. Lightweight, fits in scooter storage box. Safe for 12V motorcycle batteries.",
+        "imageUrl": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
+        "priceIDR": 389000,
+        "stock": 2,
+        "tags": [
+          "jump starter",
+          "battery",
+          "portable",
+          "scooter",
+          "motor",
+          "darurat"
+        ]
+      },
+      {
+        "id": "aki-kering-yuasa-ytx7a",
+        "title": "Aki Kering Yuasa YTX7A-BS — Baterai Motor Skuter",
+        "description": "Maintenance-free sealed lead-acid battery. Fits Honda Vario, Beat, Scoopy, Yamaha NMAX, Aerox.",
+        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400",
+        "priceIDR": 285000,
+        "stock": 6,
+        "tags": [
+          "aki",
+          "battery",
+          "scooter",
+          "motor",
+          "yuasa",
+          "vario",
+          "nmax"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "otomotif-aksesori-blok-m",
+    "name": "Aksesori Otomotif Blok M",
+    "city": "Jakarta Selatan",
+    "address": "Jl. Melawai Raya No. 8, Blok M, Jakarta Selatan",
+    "lat": -6.2443,
+    "lng": 106.7989,
+    "tags": [
+      "motor",
+      "scooter",
+      "aksesori",
+      "battery",
+      "portable",
+      "charger",
+      "kabel jumper",
+      "otomotif"
+    ],
+    "items": [
+      {
+        "id": "jump-starter-noco-gb20",
+        "title": "Portable Jump Starter NOCO Boost Sport GB20 — 400A",
+        "description": "Ultra-compact. Jump starts motorcycles and scooters in seconds. Includes USB-C powerbank output.",
+        "imageUrl": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
+        "priceIDR": 720000,
+        "stock": 3,
+        "tags": [
+          "jump starter",
+          "battery",
+          "portable",
+          "scooter",
+          "motor",
+          "noco",
+          "start"
+        ]
+      },
+      {
+        "id": "kabel-jumper-motor",
+        "title": "Kabel Jumper Motor — 30A Booster Cable Set",
+        "description": "Heavy-duty jumper cables for motorcycles and scooters. 1.5m length, color-coded clamps.",
+        "imageUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=400",
+        "priceIDR": 85000,
+        "stock": 12,
+        "tags": [
+          "kabel jumper",
+          "jump",
+          "battery",
+          "scooter",
+          "motor",
+          "booster"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pet-kingdom-kemang",
+    "name": "Pet Kingdom Kemang",
+    "city": "Jakarta Selatan",
+    "address": "Jl. Kemang Raya No. 18, Jakarta Selatan",
+    "lat": -6.2621,
+    "lng": 106.8139,
+    "tags": [
+      "pet",
+      "hewan",
+      "kucing",
+      "anjing",
+      "cat",
+      "dog",
+      "food",
+      "makanan",
+      "petshop"
+    ],
+    "items": [
+      {
+        "id": "royal-canin-indoor-cat-2kg",
+        "title": "Royal Canin Indoor Adult Cat Food — 2kg",
+        "description": "Complete nutrition for adult indoor cats. Reduces hairball and odour.",
+        "imageUrl": "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=400",
+        "priceIDR": 285000,
+        "stock": 10,
+        "tags": [
+          "cat food",
+          "cat",
+          "kucing",
+          "makanan kucing",
+          "royal canin",
+          "pet"
+        ]
+      },
+      {
+        "id": "whiskas-tuna-pouch-12pack",
+        "title": "Whiskas Tuna in Jelly — 12 x 85g Pouches",
+        "description": "Wet food for adult cats. Tuna flavour in jelly. Popular daily feed.",
+        "imageUrl": "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400",
+        "priceIDR": 95000,
+        "stock": 25,
+        "tags": [
+          "cat food",
+          "cat",
+          "kucing",
+          "makanan kucing",
+          "whiskas",
+          "wet food",
+          "pet"
+        ]
+      },
+      {
+        "id": "me-o-persian-1-2kg",
+        "title": "Me-O Persian Adult Cat Food — 1.2kg",
+        "description": "Specially formulated for Persian and long-hair breeds. Supports coat health.",
+        "imageUrl": "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=400",
+        "priceIDR": 78000,
+        "stock": 15,
+        "tags": [
+          "cat food",
+          "cat",
+          "kucing",
+          "makanan kucing",
+          "me-o",
+          "persian",
+          "pet"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "petshop-bali-kuta",
+    "name": "Bali Pet Shop Kuta",
+    "city": "Kuta, Bali",
+    "address": "Jl. Raya Kuta No. 55, Kuta, Badung, Bali",
+    "lat": -8.719,
+    "lng": 115.1733,
+    "tags": [
+      "pet",
+      "hewan",
+      "kucing",
+      "anjing",
+      "cat",
+      "dog",
+      "food",
+      "makanan",
+      "petshop",
+      "bali"
+    ],
+    "items": [
+      {
+        "id": "royal-canin-kitten-bali",
+        "title": "Royal Canin Kitten Cat Food — 2kg",
+        "description": "Complete nutrition for kittens up to 12 months. Supports immune system.",
+        "imageUrl": "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=400",
+        "priceIDR": 310000,
+        "stock": 7,
+        "tags": [
+          "cat food",
+          "cat",
+          "kucing",
+          "makanan kucing",
+          "kitten",
+          "royal canin",
+          "pet"
+        ]
+      },
+      {
+        "id": "whiskas-dry-cat-bali",
+        "title": "Whiskas Dry Adult Cat Food — 1.2kg (Ocean Fish)",
+        "description": "Daily dry food for adult cats. Ocean fish flavour. Available in Bali.",
+        "imageUrl": "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=400",
+        "priceIDR": 68000,
+        "stock": 20,
+        "tags": [
+          "cat food",
+          "cat",
+          "kucing",
+          "makanan kucing",
+          "whiskas",
+          "dry food",
+          "pet"
+        ]
+      },
+      {
+        "id": "pasir-kucing-arm-hammer",
+        "title": "Arm & Hammer Clumping Cat Litter — 6.35kg",
+        "description": "Baking soda formula. Odour control for 7 days. Hard to find in Bali.",
+        "imageUrl": "https://images.unsplash.com/photo-1545249390-6bdfa286032f?w=400",
+        "priceIDR": 195000,
+        "stock": 5,
+        "tags": [
+          "cat litter",
+          "pasir kucing",
+          "cat",
+          "kucing",
+          "pet",
+          "arm hammer"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "bintang-supermarket-seminyak",
+    "name": "Bintang Supermarket Seminyak",
+    "city": "Seminyak, Bali",
+    "address": "Jl. Raya Seminyak No. 17, Seminyak, Kuta, Badung, Bali",
+    "lat": -8.6901,
+    "lng": 115.1623,
+    "tags": [
+      "supermarket",
+      "grocery",
+      "sembako",
+      "import",
+      "beras",
+      "susu",
+      "snack",
+      "minuman",
+      "bali",
+      "seminyak"
+    ],
+    "items": [
+      {
+        "id": "bintang-beras-premium-5kg",
+        "title": "Beras Pulen Premium Rojolele — 5kg",
+        "description": "Pulen long-grain rice, locally sourced. Bintang house brand.",
+        "imageUrl": "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
+        "priceIDR": 85000,
+        "stock": 30,
+        "tags": [
+          "beras",
+          "rice",
+          "sembako",
+          "grocery"
+        ]
+      },
+      {
+        "id": "bintang-minyak-goreng-2l",
+        "title": "Bimoli Minyak Goreng Spesial — 2L",
+        "description": "Premium cooking oil. Double filtered.",
+        "imageUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400",
+        "priceIDR": 38000,
+        "stock": 50,
+        "tags": [
+          "minyak goreng",
+          "cooking oil",
+          "minyak",
+          "sembako"
+        ]
+      },
+      {
+        "id": "bintang-oatmeal-quaker",
+        "title": "Quaker Old Fashioned Oats — 1kg (Imported)",
+        "description": "Imported oats, common request from expats. In stock.",
+        "imageUrl": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400",
+        "priceIDR": 89000,
+        "stock": 15,
+        "tags": [
+          "oatmeal",
+          "oat",
+          "import",
+          "breakfast",
+          "sereal",
+          "grocery"
+        ]
+      },
+      {
+        "id": "bintang-susu-uht",
+        "title": "Ultra Milk Full Cream UHT — 1L (6-Pack)",
+        "description": "Fresh stock daily. Full cream for coffee and baking.",
+        "imageUrl": "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400",
+        "priceIDR": 92000,
+        "stock": 40,
+        "tags": [
+          "susu",
+          "milk",
+          "uht",
+          "grocery",
+          "minuman"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "coco-supermarket-kuta",
+    "name": "Coco Supermarket Kuta",
+    "city": "Kuta, Bali",
+    "address": "Jl. Sunset Road No. 99, Kuta, Badung, Bali",
+    "lat": -8.7059,
+    "lng": 115.1763,
+    "tags": [
+      "supermarket",
+      "grocery",
+      "sembako",
+      "import",
+      "bali",
+      "kuta",
+      "expat",
+      "organic"
+    ],
+    "items": [
+      {
+        "id": "coco-coconut-water-fresh",
+        "title": "Coconut Water Segar — 330ml (Canned, Malee)",
+        "description": "100% coconut water, no added sugar. Popular with tourists.",
+        "imageUrl": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400",
+        "priceIDR": 22000,
+        "stock": 100,
+        "tags": [
+          "minuman",
+          "coconut",
+          "kelapa",
+          "drink",
+          "grocery"
+        ]
+      },
+      {
+        "id": "coco-almond-milk",
+        "title": "Almond Breeze Almond Milk Unsweetened — 946ml",
+        "description": "Imported. Stock fluctuates. Currently in.",
+        "imageUrl": "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400",
+        "priceIDR": 78000,
+        "stock": 12,
+        "tags": [
+          "almond milk",
+          "susu almond",
+          "vegan",
+          "import",
+          "dairy free"
+        ]
+      },
+      {
+        "id": "coco-dark-chocolate-lindt",
+        "title": "Lindt Excellence 85% Dark Chocolate — 100g",
+        "description": "Swiss import. Classic bar. Regularly stocked.",
+        "imageUrl": "https://images.unsplash.com/photo-1481391319972-da6a2e4d3162?w=400",
+        "priceIDR": 65000,
+        "stock": 20,
+        "tags": [
+          "coklat",
+          "chocolate",
+          "dark chocolate",
+          "lindt",
+          "import",
+          "snack"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pepito-supermarket-sanur",
+    "name": "Pepito Supermarket Sanur",
+    "city": "Sanur, Bali",
+    "address": "Jl. Bypass Ngurah Rai No. 63, Sanur, Denpasar, Bali",
+    "lat": -8.6877,
+    "lng": 115.261,
+    "tags": [
+      "supermarket",
+      "grocery",
+      "sembako",
+      "import",
+      "bali",
+      "sanur",
+      "ekspat"
+    ],
+    "items": [
+      {
+        "id": "pepito-gula-organik",
+        "title": "Gula Kelapa Organik Bali — 500g",
+        "description": "Locally sourced palm sugar from Karangasem. Unrefined.",
+        "imageUrl": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400",
+        "priceIDR": 42000,
+        "stock": 25,
+        "tags": [
+          "gula",
+          "sugar",
+          "organik",
+          "organic",
+          "grocery"
+        ]
+      },
+      {
+        "id": "pepito-cheese-edam",
+        "title": "Edam Cheese Ball — 250g (Imported Netherlands)",
+        "description": "Classic Dutch cheese. Imported fresh stock.",
+        "imageUrl": "https://images.unsplash.com/photo-1486297678162-eb2a19b0a318?w=400",
+        "priceIDR": 75000,
+        "stock": 8,
+        "tags": [
+          "keju",
+          "cheese",
+          "edam",
+          "import",
+          "grocery"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tiara-dewata-denpasar",
+    "name": "Tiara Dewata Supermarket",
+    "city": "Denpasar, Bali",
+    "address": "Jl. Teuku Umar No. 1, Dauh Puri, Denpasar, Bali",
+    "lat": -8.6572,
+    "lng": 115.2099,
+    "tags": [
+      "supermarket",
+      "department store",
+      "grocery",
+      "sembako",
+      "elektronik",
+      "fashion",
+      "bali",
+      "denpasar"
+    ],
+    "items": [
+      {
+        "id": "tiara-tepung-terigu-1kg",
+        "title": "Tepung Terigu Segitiga Biru — 1kg",
+        "description": "All-purpose flour. Baking standard in Indonesia.",
+        "imageUrl": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400",
+        "priceIDR": 14000,
+        "stock": 60,
+        "tags": [
+          "tepung",
+          "flour",
+          "terigu",
+          "baking",
+          "sembako"
+        ]
+      },
+      {
+        "id": "tiara-mie-instan-carton",
+        "title": "Indomie Goreng — Karton 40 Bungkus",
+        "description": "Full carton Indomie Goreng. Best price in Denpasar.",
+        "imageUrl": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400",
+        "priceIDR": 110000,
+        "stock": 20,
+        "tags": [
+          "mie",
+          "indomie",
+          "noodle",
+          "mie instan",
+          "sembako",
+          "snack"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "kimia-farma-kuta",
+    "name": "Kimia Farma Apotek Kuta",
+    "city": "Kuta, Bali",
+    "address": "Jl. Raya Kuta No. 78, Kuta, Badung, Bali",
+    "lat": -8.722,
+    "lng": 115.174,
+    "tags": [
+      "apotek",
+      "pharmacy",
+      "obat",
+      "medicine",
+      "vitamin",
+      "suplemen",
+      "kimia farma",
+      "bali",
+      "kuta"
+    ],
+    "items": [
+      {
+        "id": "paracetamol-sanmol-strip",
+        "title": "Sanmol Paracetamol 500mg — Strip 10 Tablet",
+        "description": "Fever and mild pain relief. Always in stock.",
+        "imageUrl": "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=400",
+        "priceIDR": 8500,
+        "stock": 200,
+        "tags": [
+          "paracetamol",
+          "obat demam",
+          "obat",
+          "medicine",
+          "pharmacy"
+        ]
+      },
+      {
+        "id": "vitamin-c-500mg-bali",
+        "title": "Vitamin C 500mg Effervescent — Redoxon (Tube 10)",
+        "description": "Effervescent orange. Good for immunity. Popular with travellers.",
+        "imageUrl": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400",
+        "priceIDR": 45000,
+        "stock": 50,
+        "tags": [
+          "vitamin c",
+          "vitamin",
+          "suplemen",
+          "supplement",
+          "redoxon",
+          "immune"
+        ]
+      },
+      {
+        "id": "antangin-jrg-sachet",
+        "title": "Antangin JRG Cair — 6 Sachet",
+        "description": "Herbal remedy for nausea, bloating, cold. Local favourite.",
+        "imageUrl": "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=400",
+        "priceIDR": 18000,
+        "stock": 80,
+        "tags": [
+          "antangin",
+          "obat masuk angin",
+          "herbal",
+          "obat",
+          "medicine"
+        ]
+      },
+      {
+        "id": "omeprazole-20mg",
+        "title": "Omeprazole 20mg — Box 30 Kapsul",
+        "description": "Acid reflux relief. OTC available.",
+        "imageUrl": "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=400",
+        "priceIDR": 35000,
+        "stock": 30,
+        "tags": [
+          "omeprazole",
+          "maag",
+          "obat lambung",
+          "acid",
+          "obat",
+          "medicine"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "century-health-seminyak",
+    "name": "Century Health Seminyak",
+    "city": "Seminyak, Bali",
+    "address": "Jl. Kayu Aya No. 8, Seminyak, Kuta, Badung, Bali",
+    "lat": -8.6874,
+    "lng": 115.1608,
+    "tags": [
+      "apotek",
+      "pharmacy",
+      "vitamin",
+      "suplemen",
+      "supplement",
+      "skincare",
+      "beauty",
+      "bali"
+    ],
+    "items": [
+      {
+        "id": "omega3-fish-oil-1000mg",
+        "title": "Omega-3 Fish Oil 1000mg — Nature's Plus (90 kapsul)",
+        "description": "High EPA/DHA. Imported, not always available in Bali.",
+        "imageUrl": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400",
+        "priceIDR": 245000,
+        "stock": 12,
+        "tags": [
+          "omega 3",
+          "fish oil",
+          "supplement",
+          "vitamin",
+          "suplemen"
+        ]
+      },
+      {
+        "id": "collagen-powder-bali",
+        "title": "Marine Collagen Peptide Powder — 150g (Wellgard)",
+        "description": "Unflavoured marine collagen. Popular with expats.",
+        "imageUrl": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400",
+        "priceIDR": 320000,
+        "stock": 8,
+        "tags": [
+          "collagen",
+          "supplement",
+          "suplemen",
+          "vitamin",
+          "skincare"
+        ]
+      },
+      {
+        "id": "sunscreen-spf50-bali",
+        "title": "Sunscreen SPF 50+ PA++++ Biore UV — 50ml",
+        "description": "Lightweight, daily sunscreen. Essential in Bali.",
+        "imageUrl": "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400",
+        "priceIDR": 88000,
+        "stock": 25,
+        "tags": [
+          "sunscreen",
+          "spf",
+          "skincare",
+          "biore",
+          "uv",
+          "tabir surya"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ibox-bali-mall",
+    "name": "iBox Bali — Beachwalk Mall",
+    "city": "Kuta, Bali",
+    "address": "Beachwalk Shopping Center Lt. 1, Jl. Pantai Kuta, Bali",
+    "lat": -8.7199,
+    "lng": 115.1682,
+    "tags": [
+      "iphone",
+      "apple",
+      "ipad",
+      "macbook",
+      "airpod",
+      "charger",
+      "accessories",
+      "elektronik",
+      "bali"
+    ],
+    "items": [
+      {
+        "id": "iphone-15-128gb-bali",
+        "title": "Apple iPhone 15 — 128GB (Black, Blue, Pink)",
+        "description": "Official iBox stock. Indonesian warranty. All colours available.",
+        "imageUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400",
+        "priceIDR": 13999000,
+        "stock": 5,
+        "tags": [
+          "iphone",
+          "iphone 15",
+          "apple",
+          "smartphone",
+          "hp"
+        ]
+      },
+      {
+        "id": "airpods-pro-2-bali",
+        "title": "Apple AirPods Pro (2nd Gen) — USB-C",
+        "description": "Latest model with USB-C charging. Official iBox.",
+        "imageUrl": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400",
+        "priceIDR": 3999000,
+        "stock": 8,
+        "tags": [
+          "airpod",
+          "airpods",
+          "apple",
+          "earphone",
+          "tws",
+          "earbuds"
+        ]
+      },
+      {
+        "id": "magsafe-charger-bali",
+        "title": "Apple MagSafe Charger 15W — Original",
+        "description": "Genuine Apple MagSafe. For iPhone 12 and above.",
+        "imageUrl": "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400",
+        "priceIDR": 499000,
+        "stock": 15,
+        "tags": [
+          "charger",
+          "magsafe",
+          "apple",
+          "iphone",
+          "aksesori"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "samsung-bali-denpasar",
+    "name": "Samsung Experience Store Denpasar",
+    "city": "Denpasar, Bali",
+    "address": "Jl. Diponegoro No. 100, Denpasar, Bali",
+    "lat": -8.651,
+    "lng": 115.2127,
+    "tags": [
+      "samsung",
+      "galaxy",
+      "android",
+      "smartphone",
+      "tv",
+      "tablet",
+      "elektronik",
+      "bali"
+    ],
+    "items": [
+      {
+        "id": "samsung-a55-bali",
+        "title": "Samsung Galaxy A55 5G — 256GB",
+        "description": "Mid-range 5G phone. Triple camera, IP67. Official Samsung.",
+        "imageUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400",
+        "priceIDR": 6499000,
+        "stock": 4,
+        "tags": [
+          "samsung",
+          "galaxy a55",
+          "android",
+          "smartphone",
+          "hp",
+          "5g"
+        ]
+      },
+      {
+        "id": "samsung-tab-s9fe-bali",
+        "title": "Samsung Galaxy Tab S9 FE — 6GB/128GB WiFi",
+        "description": "10.9\" display, S-Pen included. Good for students.",
+        "imageUrl": "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400",
+        "priceIDR": 7499000,
+        "stock": 3,
+        "tags": [
+          "samsung",
+          "tablet",
+          "tab",
+          "ipad",
+          "android"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "erafone-bali-galeria",
+    "name": "Erafone — Galeria Nusa Dua Bali",
+    "city": "Nusa Dua, Bali",
+    "address": "Bali Collection, Kawasan ITDC, Nusa Dua, Bali",
+    "lat": -8.8006,
+    "lng": 115.2325,
+    "tags": [
+      "xiaomi",
+      "oppo",
+      "vivo",
+      "realme",
+      "smartphone",
+      "android",
+      "hp",
+      "elektronik",
+      "bali"
+    ],
+    "items": [
+      {
+        "id": "xiaomi-14t-bali",
+        "title": "Xiaomi 14T — 12GB/256GB (Leica Camera)",
+        "description": "Flagship Leica camera. Stunning display. Official warranty.",
+        "imageUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400",
+        "priceIDR": 8999000,
+        "stock": 3,
+        "tags": [
+          "xiaomi",
+          "14t",
+          "smartphone",
+          "android",
+          "hp",
+          "kamera"
+        ]
+      },
+      {
+        "id": "oppo-reno12-bali",
+        "title": "OPPO Reno 12 — 12GB/256GB",
+        "description": "AI Portrait camera. 80W fast charge. Slim design.",
+        "imageUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400",
+        "priceIDR": 5299000,
+        "stock": 5,
+        "tags": [
+          "oppo",
+          "reno",
+          "smartphone",
+          "android",
+          "hp"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rip-curl-bali-kuta",
+    "name": "Rip Curl Bali — Kuta",
+    "city": "Kuta, Bali",
+    "address": "Jl. Legian No. 88, Kuta, Badung, Bali",
+    "lat": -8.7167,
+    "lng": 115.1713,
+    "tags": [
+      "surf",
+      "surfboard",
+      "wetsuit",
+      "boardshort",
+      "olahraga",
+      "sport",
+      "bali",
+      "kuta",
+      "rip curl"
+    ],
+    "items": [
+      {
+        "id": "ripcurl-boardshort-bali",
+        "title": "Rip Curl Mirage Boardshort — 20\" (Various Colours)",
+        "description": "Classic Rip Curl boardshort. Quick dry. Bali store exclusive.",
+        "imageUrl": "https://images.unsplash.com/photo-1520367445093-50dc08a59d9d?w=400",
+        "priceIDR": 485000,
+        "stock": 20,
+        "tags": [
+          "boardshort",
+          "celana pantai",
+          "surf",
+          "baju",
+          "fashion"
+        ]
+      },
+      {
+        "id": "ripcurl-rashguard",
+        "title": "Rip Curl UV Long-Sleeve Rash Guard — UPF50+",
+        "description": "Sun protection for surfing. Multiple sizes in stock.",
+        "imageUrl": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400",
+        "priceIDR": 395000,
+        "stock": 15,
+        "tags": [
+          "rash guard",
+          "surf",
+          "baju renang",
+          "uv",
+          "olahraga",
+          "sport"
+        ]
+      },
+      {
+        "id": "sunscreen-surf-bali",
+        "title": "Sun Bum SPF 50 Sunscreen Lotion — 177ml (Reef Safe)",
+        "description": "Reef-safe, water-resistant 80 min. Popular with surfers.",
+        "imageUrl": "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400",
+        "priceIDR": 185000,
+        "stock": 30,
+        "tags": [
+          "sunscreen",
+          "spf",
+          "surf",
+          "reef safe",
+          "sun bum",
+          "tabir surya"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "surfer-girl-bali-legian",
+    "name": "Surfer Girl Bali",
+    "city": "Legian, Bali",
+    "address": "Jl. Legian No. 138, Legian, Badung, Bali",
+    "lat": -8.7097,
+    "lng": 115.1694,
+    "tags": [
+      "surf",
+      "fashion",
+      "baju",
+      "wanita",
+      "female",
+      "dress",
+      "bali",
+      "beach"
+    ],
+    "items": [
+      {
+        "id": "sg-surf-dress",
+        "title": "Surfer Girl Kaftan Dress — Bali Print",
+        "description": "Lightweight rayon. Bali-made. Popular tourist purchase.",
+        "imageUrl": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400",
+        "priceIDR": 225000,
+        "stock": 30,
+        "tags": [
+          "dress",
+          "baju",
+          "fashion",
+          "kaftan",
+          "bali",
+          "wanita"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "badminton-shop-denpasar",
+    "name": "Toko Olahraga Maju Denpasar",
+    "city": "Denpasar, Bali",
+    "address": "Jl. Hayam Wuruk No. 56, Denpasar, Bali",
+    "lat": -8.6555,
+    "lng": 115.2138,
+    "tags": [
+      "olahraga",
+      "sport",
+      "badminton",
+      "raket",
+      "yonex",
+      "shuttle",
+      "bola",
+      "sepatu olahraga",
+      "bali"
+    ],
+    "items": [
+      {
+        "id": "yonex-astrox88d-bali",
+        "title": "Yonex Astrox 88D Pro — Raket Badminton",
+        "description": "Yonex attacker's racket. 4U, G5. Popular model.",
+        "imageUrl": "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=400",
+        "priceIDR": 2100000,
+        "stock": 2,
+        "tags": [
+          "raket",
+          "badminton",
+          "yonex",
+          "astrox",
+          "olahraga",
+          "sport"
+        ]
+      },
+      {
+        "id": "shuttlecock-rsl-bali",
+        "title": "Shuttlecock Bulu RSL No. 2 — Tube 12 Pcs",
+        "description": "Tournament-grade feather shuttlecock. Speed 2 (Bali humidity).",
+        "imageUrl": "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=400",
+        "priceIDR": 145000,
+        "stock": 20,
+        "tags": [
+          "shuttlecock",
+          "kok",
+          "badminton",
+          "olahraga",
+          "sport",
+          "rsl"
+        ]
+      },
+      {
+        "id": "sepatu-badminton-victor",
+        "title": "Victor A362 Badminton Shoes — Size 40–44",
+        "description": "Non-marking sole. Excellent lateral support.",
+        "imageUrl": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400",
+        "priceIDR": 895000,
+        "stock": 5,
+        "tags": [
+          "sepatu badminton",
+          "sepatu olahraga",
+          "victor",
+          "badminton",
+          "shoes",
+          "sport"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "matahari-dept-store-bali",
+    "name": "Matahari Department Store — Discovery Mall Kuta",
+    "city": "Kuta, Bali",
+    "address": "Discovery Shopping Mall, Jl. Kartika Plaza, Kuta, Bali",
+    "lat": -8.7259,
+    "lng": 115.1698,
+    "tags": [
+      "fashion",
+      "baju",
+      "sepatu",
+      "tas",
+      "department store",
+      "matahari",
+      "bali",
+      "kuta",
+      "celana",
+      "kaos"
+    ],
+    "items": [
+      {
+        "id": "kaos-polos-bali",
+        "title": "Kaos Polos Cotton Combed 30s — Various Colours",
+        "description": "Basic t-shirt, premium cotton. Sizes S–XXL.",
+        "imageUrl": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400",
+        "priceIDR": 95000,
+        "stock": 50,
+        "tags": [
+          "kaos",
+          "t-shirt",
+          "baju",
+          "fashion",
+          "clothing"
+        ]
+      },
+      {
+        "id": "sandal-jepit-bali",
+        "title": "Sandal Jepit Karet — Havaianas Brasil (Various Sizes)",
+        "description": "Classic flip flop. Original Havaianas. Popular in Bali.",
+        "imageUrl": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400",
+        "priceIDR": 175000,
+        "stock": 35,
+        "tags": [
+          "sandal",
+          "sepatu",
+          "havaianas",
+          "flip flop",
+          "shoes",
+          "bali"
+        ]
+      },
+      {
+        "id": "celana-jeans-levis-bali",
+        "title": "Levi's 511 Slim Jeans — Various Washes & Sizes",
+        "description": "Slim fit. Official Levi's stock.",
+        "imageUrl": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400",
+        "priceIDR": 995000,
+        "stock": 12,
+        "tags": [
+          "jeans",
+          "levis",
+          "celana",
+          "fashion",
+          "denim",
+          "baju"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "bali-batik-ubud",
+    "name": "Krisna Batik & Souvenir Ubud",
+    "city": "Ubud, Bali",
+    "address": "Jl. Monkey Forest No. 30, Ubud, Gianyar, Bali",
+    "lat": -8.5204,
+    "lng": 115.2629,
+    "tags": [
+      "batik",
+      "souvenir",
+      "bali",
+      "ubud",
+      "fashion",
+      "baju",
+      "oleh-oleh"
+    ],
+    "items": [
+      {
+        "id": "batik-bali-kemeja",
+        "title": "Kemeja Batik Bali Lengan Pendek — Motif Wayang",
+        "description": "Handmade batik tulis from Ubud craftsmen. Gift-ready.",
+        "imageUrl": "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=400",
+        "priceIDR": 285000,
+        "stock": 20,
+        "tags": [
+          "batik",
+          "kemeja",
+          "fashion",
+          "baju",
+          "bali",
+          "souvenir"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "bali-buda-ubud",
+    "name": "Bali Buda Organic Store",
+    "city": "Ubud, Bali",
+    "address": "Jl. Jembawan No. 1, Ubud, Gianyar, Bali",
+    "lat": -8.5069,
+    "lng": 115.2625,
+    "tags": [
+      "organic",
+      "organik",
+      "vegan",
+      "healthy",
+      "supplement",
+      "matcha",
+      "coffee",
+      "bali",
+      "ubud"
+    ],
+    "items": [
+      {
+        "id": "bali-organic-matcha-buda",
+        "title": "Matcha Organik Bali Buda — 100g",
+        "description": "Ceremonial-grade. Sourced from organic farms. Café-quality.",
+        "imageUrl": "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=400",
+        "priceIDR": 195000,
+        "stock": 10,
+        "tags": [
+          "matcha",
+          "organik",
+          "organic",
+          "teh",
+          "green tea",
+          "bali"
+        ]
+      },
+      {
+        "id": "spirulina-powder-buda",
+        "title": "Spirulina Powder Organik — 200g",
+        "description": "Certified organic. Used in smoothies and juices.",
+        "imageUrl": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400",
+        "priceIDR": 165000,
+        "stock": 15,
+        "tags": [
+          "spirulina",
+          "supplement",
+          "suplemen",
+          "organik",
+          "vegan",
+          "healthy"
+        ]
+      },
+      {
+        "id": "bali-kopi-luwak",
+        "title": "Kopi Luwak Bali Arabica — 100g (Genuine)",
+        "description": "Ethically sourced luwak coffee from Kintamani. Certificate included.",
+        "imageUrl": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400",
+        "priceIDR": 450000,
+        "stock": 5,
+        "tags": [
+          "kopi",
+          "coffee",
+          "kopi luwak",
+          "bali",
+          "arabica",
+          "kintamani"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "down-to-earth-canggu",
+    "name": "Down to Earth Organic Canggu",
+    "city": "Canggu, Bali",
+    "address": "Jl. Pantai Berawa No. 52, Canggu, Badung, Bali",
+    "lat": -8.6478,
+    "lng": 115.1385,
+    "tags": [
+      "organic",
+      "organik",
+      "vegan",
+      "grocery",
+      "health food",
+      "bali",
+      "canggu",
+      "expat"
+    ],
+    "items": [
+      {
+        "id": "dte-protein-powder",
+        "title": "Garden of Life Organic Plant Protein — 680g (Vanilla)",
+        "description": "Vegan protein. USDA Certified Organic. Popular with expats.",
+        "imageUrl": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400",
+        "priceIDR": 680000,
+        "stock": 6,
+        "tags": [
+          "protein powder",
+          "vegan",
+          "protein",
+          "supplement",
+          "organik",
+          "plant based"
+        ]
+      },
+      {
+        "id": "dte-tempeh-organic",
+        "title": "Tempeh Organik Lokal Bali — 250g",
+        "description": "Fresh, locally made organic tempeh. Daily delivery.",
+        "imageUrl": "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400",
+        "priceIDR": 22000,
+        "stock": 40,
+        "tags": [
+          "tempeh",
+          "organik",
+          "vegan",
+          "protein",
+          "makanan",
+          "lokal"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "kintamani-coffee-ubud",
+    "name": "Kintamani Coffee Roaster",
+    "city": "Ubud, Bali",
+    "address": "Jl. Raya Ubud No. 8, Ubud, Gianyar, Bali",
+    "lat": -8.506,
+    "lng": 115.2641,
+    "tags": [
+      "kopi",
+      "coffee",
+      "arabica",
+      "robusta",
+      "roaster",
+      "bali",
+      "ubud",
+      "kintamani"
+    ],
+    "items": [
+      {
+        "id": "kintamani-arabica-250g",
+        "title": "Kintamani Arabica Single Origin — 250g (Medium Roast)",
+        "description": "Grown at 1400m on Mt. Batur. Citrus and chocolate notes.",
+        "imageUrl": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400",
+        "priceIDR": 145000,
+        "stock": 15,
+        "tags": [
+          "kopi",
+          "coffee",
+          "arabica",
+          "kintamani",
+          "single origin",
+          "bali"
+        ]
+      },
+      {
+        "id": "kintamani-cold-brew-kit",
+        "title": "Cold Brew Kit — Robusta Bali 200g + Filter",
+        "description": "Ready to brew kit. Strong flavour, low acid. Makes 1L.",
+        "imageUrl": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400",
+        "priceIDR": 98000,
+        "stock": 10,
+        "tags": [
+          "cold brew",
+          "kopi",
+          "coffee",
+          "robusta",
+          "bali",
+          "kit"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mother-care-bali-kuta",
+    "name": "Mother & Baby Care Kuta",
+    "city": "Kuta, Bali",
+    "address": "Jl. Raya Tuban No. 12, Kuta, Badung, Bali",
+    "lat": -8.7271,
+    "lng": 115.1703,
+    "tags": [
+      "baby",
+      "bayi",
+      "ibu hamil",
+      "stroller",
+      "pampers",
+      "susu bayi",
+      "formula",
+      "mpasi",
+      "bali"
+    ],
+    "items": [
+      {
+        "id": "pampers-active-baby-m",
+        "title": "Pampers Active Baby — Size M (62 Pcs)",
+        "description": "Soft, breathable diapers. Size M (6–11kg).",
+        "imageUrl": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400",
+        "priceIDR": 145000,
+        "stock": 25,
+        "tags": [
+          "pampers",
+          "diapers",
+          "popok",
+          "baby",
+          "bayi"
+        ]
+      },
+      {
+        "id": "sgm-formula-susu-bayi",
+        "title": "SGM Eksplor 3+ — Susu Formula Anak 1–5 Tahun (800g)",
+        "description": "Formula milk for toddlers. DHA & Omega-3 enriched.",
+        "imageUrl": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400",
+        "priceIDR": 125000,
+        "stock": 20,
+        "tags": [
+          "susu bayi",
+          "formula",
+          "sgm",
+          "baby",
+          "bayi",
+          "toddler"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "periplus-bali-kuta",
+    "name": "Periplus Bookstore — Beachwalk Kuta",
+    "city": "Kuta, Bali",
+    "address": "Beachwalk Mall Lt. 1, Jl. Pantai Kuta, Bali",
+    "lat": -8.72,
+    "lng": 115.1683,
+    "tags": [
+      "buku",
+      "book",
+      "novel",
+      "stationery",
+      "majalah",
+      "magazine",
+      "periplus",
+      "bali"
+    ],
+    "items": [
+      {
+        "id": "periplus-lonely-planet-bali",
+        "title": "Lonely Planet Bali & Lombok — Travel Guide (2024 Ed.)",
+        "description": "Latest edition. Maps included. Popular with tourists.",
+        "imageUrl": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400",
+        "priceIDR": 385000,
+        "stock": 8,
+        "tags": [
+          "buku",
+          "book",
+          "travel",
+          "lonely planet",
+          "bali",
+          "guide"
+        ]
+      },
+      {
+        "id": "periplus-atomic-habits",
+        "title": "Atomic Habits — James Clear (English, Paperback)",
+        "description": "Bestseller. Usually in stock at Periplus Bali.",
+        "imageUrl": "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400",
+        "priceIDR": 225000,
+        "stock": 5,
+        "tags": [
+          "buku",
+          "book",
+          "novel",
+          "atomic habits",
+          "self help",
+          "english"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ace-hardware-bali",
+    "name": "ACE Hardware — Mall Bali Galeria",
+    "city": "Denpasar, Bali",
+    "address": "Mall Bali Galeria, Jl. Sunset Road, Kuta, Badung, Bali",
+    "lat": -8.7024,
+    "lng": 115.1808,
+    "tags": [
+      "hardware",
+      "perkakas",
+      "tool",
+      "cat tembok",
+      "paint",
+      "listrik",
+      "kabel",
+      "bali",
+      "ace hardware"
+    ],
+    "items": [
+      {
+        "id": "bosch-hand-drill-bali",
+        "title": "Bosch GSB 550 Impact Drill — 550W",
+        "description": "Compact hammer drill. Good for light to medium masonry.",
+        "imageUrl": "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=400",
+        "priceIDR": 785000,
+        "stock": 4,
+        "tags": [
+          "bor",
+          "drill",
+          "bosch",
+          "perkakas",
+          "hardware",
+          "tool"
+        ]
+      },
+      {
+        "id": "cat-tembok-nippon",
+        "title": "Nippon Paint Weatherbond — 5kg (White / Custom Colour)",
+        "description": "Exterior weather-resistant paint. Bali humidity rated.",
+        "imageUrl": "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=400",
+        "priceIDR": 235000,
+        "stock": 20,
+        "tags": [
+          "cat tembok",
+          "cat",
+          "paint",
+          "nippon",
+          "exterior",
+          "rumah"
+        ]
+      },
+      {
+        "id": "extension-cord-ace-bali",
+        "title": "Kabel Listrik Extension 5m — 3 Stop Kontak Surge Protector",
+        "description": "Surge-protected power strip. 3 outlets + 2 USB ports.",
+        "imageUrl": "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400",
+        "priceIDR": 125000,
+        "stock": 15,
+        "tags": [
+          "kabel listrik",
+          "extension cord",
+          "stop kontak",
+          "listrik",
+          "hardware"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "musik-bali-denpasar",
+    "name": "Toko Musik Gema Denpasar",
+    "city": "Denpasar, Bali",
+    "address": "Jl. Imam Bonjol No. 44, Denpasar, Bali",
+    "lat": -8.6521,
+    "lng": 115.2153,
+    "tags": [
+      "musik",
+      "gitar",
+      "guitar",
+      "ukulele",
+      "drum",
+      "piano",
+      "keyboard",
+      "bali",
+      "denpasar"
+    ],
+    "items": [
+      {
+        "id": "ukulele-soprano-bali",
+        "title": "Ukulele Soprano Mahoni — Fender Fullerton",
+        "description": "Soprano scale. Bali-ready tuning. Great for beginners.",
+        "imageUrl": "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400",
+        "priceIDR": 1850000,
+        "stock": 3,
+        "tags": [
+          "ukulele",
+          "gitar",
+          "musik",
+          "music",
+          "fender"
+        ]
+      },
+      {
+        "id": "gitar-akustik-yamaha-bali",
+        "title": "Yamaha F310 Acoustic Guitar — Natural",
+        "description": "Classic beginner–intermediate guitar. Very popular in Bali.",
+        "imageUrl": "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400",
+        "priceIDR": 1350000,
+        "stock": 5,
+        "tags": [
+          "gitar",
+          "guitar",
+          "yamaha",
+          "akustik",
+          "musik",
+          "music"
+        ]
+      }
+    ]
+  }
+]
