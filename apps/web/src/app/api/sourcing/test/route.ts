@@ -1,33 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
 import {
   getImageUrl,
   makeFallbackItems,
   estimatePrice,
 } from "@goget/shared/sourcing";
-import { getImagePreviewUrl } from "@/lib/image-preview";
+import { parseJsonBody } from "@/app/api/_lib/validation";
 import { SYSTEM_PROMPT } from "./prompt";
 
 const client = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null;
+const SourcingTestRequestSchema = z.object({
+  query: z.string().trim().min(1),
+  context: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  limit: z.coerce.number().int().min(1).max(12).optional().default(6),
+});
+
+interface LlmDirectoryItem {
+  externalUrl?: string;
+  title?: string;
+  imageQuery?: string;
+  priceIDR?: number;
+  merchantName?: string;
+  pickupAddress?: string;
+  pickupCity?: string;
+}
+
+interface LlmDirectoryResponse {
+  items?: LlmDirectoryItem[];
+}
 
 export async function POST(req: NextRequest) {
-  const { query, context, city, limit = 6 } = await req.json().catch(() => ({}));
-
-  if (!query) return NextResponse.json({ items: [], source: "directory" });
+  const body = await parseJsonBody(req, SourcingTestRequestSchema);
+  if (!body.success) return body.response;
+  const { query, context, city, limit } = body.data;
 
   const cityHint = city ? city.replace(/\(demo\)/i, "").trim() : "Indonesia";
-  const fallback = async () => {
-    const items = await Promise.all(makeFallbackItems(query, cityHint, limit).map(async item => {
-      const previewImage = await getImagePreviewUrl(item.imageUrl);
-      return {
-        ...item,
-        imageUrl: previewImage ?? item.imageUrl,
-      };
-    }));
-    return NextResponse.json({ items, source: "directory" });
-  };
+  const fallback = () => NextResponse.json(
+    { items: makeFallbackItems(query, cityHint, limit), source: "directory" },
+  );
 
   if (!client) return fallback();
 
@@ -46,7 +60,7 @@ export async function POST(req: NextRequest) {
     const textBlock = response.content.find((c) => c.type === "text");
     if (!textBlock || textBlock.type !== "text") return fallback();
 
-    let parsed: any;
+    let parsed: LlmDirectoryResponse;
     try {
       parsed = JSON.parse(textBlock.text);
     } catch {
@@ -54,20 +68,16 @@ export async function POST(req: NextRequest) {
       if (!match) return fallback();
       try { parsed = JSON.parse(match[0]); } catch { return fallback(); }
     }
-
-    const rawItems: any[] = parsed.items ?? [];
+    const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
     if (rawItems.length === 0) return fallback();
-
-    const items = await Promise.all(rawItems.slice(0, limit).map(async (item: any) => {
+    const items = rawItems.slice(0, limit).map((item) => {
       const imgKeywords: string = item.imageQuery?.trim() || query;
-      const fallbackImage = getImageUrl(imgKeywords);
-      const previewImage = await getImagePreviewUrl(fallbackImage);
       return {
         source: "directory",
         externalUrl: item.externalUrl ?? "",
         title: item.title ?? query,
         description: `Available at ${item.merchantName ?? "local store"}`,
-        imageUrl: previewImage ?? fallbackImage,
+        imageUrl: getImageUrl(imgKeywords),
         priceIDR: typeof item.priceIDR === "number" ? item.priceIDR : estimatePrice(query),
         merchantName: item.merchantName ?? "",
         pickupAddress: item.pickupAddress ?? "",
@@ -75,7 +85,7 @@ export async function POST(req: NextRequest) {
         pickupGeo: null,
         distanceKm: undefined,
       };
-    }));
+    });
 
     return NextResponse.json({ items, source: "directory" });
   } catch {

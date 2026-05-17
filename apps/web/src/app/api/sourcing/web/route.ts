@@ -1,10 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { getImagePreviewUrl } from "@/lib/image-preview";
+import { z } from "zod";
+import { getImageUrl } from "@goget/shared/sourcing";
+import { getClientIp, rateLimitHeaders, takeRateLimitToken } from "@/lib/server-rate-limit";
+import { parseJsonBody } from "@/app/api/_lib/validation";
 
 const client = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null;
+const SOURCING_WEB_WINDOW_MS = 60 * 1000;
+const SOURCING_WEB_MAX_PER_IP = 12;
+const SourcingWebRequestSchema = z.object({
+  query: z.string().trim().min(1),
+  near: z
+    .object({
+      lat: z.coerce.number().finite(),
+      lng: z.coerce.number().finite(),
+    })
+    .optional(),
+  city: z.string().trim().optional(),
+});
+
+interface GeocodeLookupResult {
+  lat: string;
+  lon: string;
+}
+
+interface LlmWebItem {
+  title?: string;
+  description?: string;
+  priceIDR?: number;
+  merchantName?: string;
+  pickupAddress?: string;
+  pickupCity?: string;
+  imageUrl?: string | null;
+  externalUrl?: string;
+}
+
+interface LlmWebResponse {
+  items?: LlmWebItem[];
+}
 
 const BLOCKED_DOMAINS = [
   "tokopedia", "shopee", "lazada", "bukalapak", "blibli",
@@ -92,7 +127,7 @@ async function geocodeAddress(address: string, city: string): Promise<{ lat: num
       `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=id`,
       { headers: { "User-Agent": "GoGet-App/1.0", "Accept-Language": "id,en" } },
     );
-    const data: any[] = await r.json();
+    const data = (await r.json()) as GeocodeLookupResult[];
     if (!data.length) return null;
     return { lat: Number(data[0].lat), lng: Number(data[0].lon) };
   } catch {
@@ -101,7 +136,21 @@ async function geocodeAddress(address: string, city: string): Promise<{ lat: num
 }
 
 export async function POST(req: NextRequest) {
-  const { query, near, city } = await req.json();
+  const rate = takeRateLimitToken({
+    scope: "sourcing-web-ip",
+    identifier: getClientIp(req),
+    max: SOURCING_WEB_MAX_PER_IP,
+    windowMs: SOURCING_WEB_WINDOW_MS,
+  });
+  if (!rate.ok) {
+    return NextResponse.json(
+      { error: "Too many web sourcing requests. Please retry shortly." },
+      { status: 429, headers: rateLimitHeaders(rate) },
+    );
+  }
+  const body = await parseJsonBody(req, SourcingWebRequestSchema);
+  if (!body.success) return body.response;
+  const { query, near, city } = body.data;
 
   if (!client) {
     return NextResponse.json({ items: [], source: "web", error: "no_api_key" });
@@ -117,7 +166,9 @@ export async function POST(req: NextRequest) {
     const response = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 2048,
-      tools: [{ type: "web_search_20250305" as any, name: "web_search" }],
+      tools: [
+        { type: "web_search_20250305", name: "web_search" } as unknown as Anthropic.Messages.Tool,
+      ],
       system: SYSTEM,
       messages: [
         {
@@ -132,7 +183,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ items: [], source: "web" });
     }
 
-    let parsed: any;
+    let parsed: LlmWebResponse;
     try {
       parsed = JSON.parse(finalText.text);
     } catch {
@@ -141,7 +192,7 @@ export async function POST(req: NextRequest) {
       parsed = JSON.parse(match[0]);
     }
 
-    const rawItems: any[] = parsed.items ?? [];
+    const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
 
     // Filter out marketplace domains and geocode in parallel
     const filtered = rawItems.filter((item) => {
@@ -177,49 +228,14 @@ export async function POST(req: NextRequest) {
             : undefined;
 
         // Priority: Claude's imageUrl → og:image from the store page → category fallback
-        const categoryFallback = (() => {
-          const q = query.toLowerCase();
-          const map: Record<string, string> = {
-            smartphone: "photo-1511707171634-5f897ff02aa9", laptop: "photo-1496181133206-80ce9b88a853",
-            camera: "photo-1516035069371-29a1b244cc32", headphones: "photo-1505740420928-5e560c06d30e",
-            tv: "photo-1593359677879-a4bb92f4834c", electronics: "photo-1498049794561-7780e7231661",
-            coffee: "photo-1461023058943-07fcbe16d735", matcha: "photo-1536256263959-770b48d82b0a",
-            shoes: "photo-1542291026-7eec264c27ff", clothing: "photo-1489987707025-afc232f7ea0f",
-            sports: "photo-1517649763962-0c623066013b", books: "photo-1481627834876-b7833e8f5570",
-            vitamins: "photo-1584308666744-24d5c474f2ae", toys: "photo-1558618666-fcd25c85cd64",
-            pet: "photo-1583337130417-3346a1be7dee", baby: "photo-1515488042361-ee00e0ddd4e4",
-            skincare: "photo-1556228720-195a672e8a03", groceries: "photo-1542838132-92c53300491e",
-          };
-          const key = q.match(/iphone|samsung|xiaomi|smartphone/) ? "smartphone"
-            : q.match(/laptop|macbook|notebook/) ? "laptop"
-            : q.match(/camera|dslr|mirrorless/) ? "camera"
-            : q.match(/headphone|earphone|earbuds/) ? "headphones"
-            : q.match(/tv|televisi/) ? "tv"
-            : q.match(/coffee|kopi/) ? "coffee"
-            : q.match(/matcha/) ? "matcha"
-            : q.match(/shoes|sepatu|sneaker/) ? "shoes"
-            : q.match(/baju|fashion|clothing/) ? "clothing"
-            : q.match(/sport|badminton|raket/) ? "sports"
-            : q.match(/buku|book|novel/) ? "books"
-            : q.match(/vitamin|suplemen/) ? "vitamins"
-            : q.match(/mainan|toy|lego/) ? "toys"
-            : q.match(/pet|kucing|anjing/) ? "pet"
-            : q.match(/baby|bayi|pampers/) ? "baby"
-            : q.match(/skincare|serum|sunscreen/) ? "skincare"
-            : q.match(/groceries|sembako|bahan makanan/) ? "groceries"
-            : "electronics";
-          return `https://images.unsplash.com/${map[key] ?? "photo-1472851294608-062f824d29cc"}?w=400&q=70&auto=format&fit=crop`;
-        })();
-
-        const rawImageUrl = item.imageUrl || ogImage || categoryFallback;
-        const previewImageUrl = await getImagePreviewUrl(rawImageUrl);
+        const categoryFallback = getImageUrl(query);
 
         return {
           source: "web",
           externalUrl: item.externalUrl ?? "",
           title: item.title,
           description: item.description ?? "",
-          imageUrl: previewImageUrl ?? rawImageUrl,
+          imageUrl: item.imageUrl || ogImage || categoryFallback,
           priceIDR: item.priceIDR ?? 0,
           merchantName: item.merchantName,
           pickupAddress: item.pickupAddress ?? "",
@@ -237,7 +253,8 @@ export async function POST(req: NextRequest) {
       : geocoded;
 
     return NextResponse.json({ items: results, source: "web" });
-  } catch (e: any) {
-    return NextResponse.json({ items: [], source: "web", error: e.message });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "web_sourcing_failed";
+    return NextResponse.json({ items: [], source: "web", error: message });
   }
 }
