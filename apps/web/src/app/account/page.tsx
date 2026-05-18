@@ -113,7 +113,7 @@ function AccountInner() {
         <>
           <div>
             <h1 className="text-2xl font-semibold">Account</h1>
-            <p className="text-sm text-gray-500 mt-1">You're signed in.</p>
+            <p className="text-sm text-gray-500 mt-1">You&apos;re signed in.</p>
           </div>
           <div className="rounded-2xl border border-gray-200 p-5 space-y-3">
             <div className="flex items-center gap-3">
@@ -127,8 +127,8 @@ function AccountInner() {
             </div>
             {demo && (
               <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-700">
-                You're in demo mode — you can browse the app, but real orders
-                won't be placed against Supabase. Sign in with a real WhatsApp
+                You&apos;re in demo mode — you can browse the app, but real orders
+                won&apos;t be placed against Supabase. Sign in with a real WhatsApp
                 number to check out.
               </div>
             )}

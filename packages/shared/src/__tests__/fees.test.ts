@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   computeFees,
+  computeCheckoutPricing,
   SERVICE_FEE_FLAT_IDR,
   PPN_PCT,
 } from "../fees";
@@ -84,5 +85,34 @@ describe("computeFees", () => {
         expect(Number.isInteger(r.courierFeeIDR)).toBe(true);
       }
     });
+  });
+});
+
+describe("computeCheckoutPricing", () => {
+  it("includes item subtotal plus delivery/service/tax breakdown fields", () => {
+    const r = computeCheckoutPricing({
+      itemSubtotalIDR: 450_000,
+      deliveryFeeIDR: 21_000,
+    });
+
+    expect(r.itemSubtotalIDR).toBe(450_000);
+    expect(r.deliveryFeeIDR).toBe(21_000);
+    expect(r.courierFeeIDR).toBe(21_000);
+    expect(r.serviceFeeIDR).toBe(roundIDR(SERVICE_FEE_FLAT_IDR));
+    expect(r.taxIDR).toBe(roundIDR(r.serviceFeeIDR * PPN_PCT));
+    expect(r.totalIDR).toBe(r.deliveryFeeIDR + r.serviceFeeIDR + r.taxIDR);
+  });
+
+  it("preserves integer rupiah outputs for all fields", () => {
+    const r = computeCheckoutPricing({
+      itemSubtotalIDR: 99_999,
+      deliveryFeeIDR: 12_345,
+    });
+    expect(Number.isInteger(r.itemSubtotalIDR)).toBe(true);
+    expect(Number.isInteger(r.deliveryFeeIDR)).toBe(true);
+    expect(Number.isInteger(r.courierFeeIDR)).toBe(true);
+    expect(Number.isInteger(r.serviceFeeIDR)).toBe(true);
+    expect(Number.isInteger(r.taxIDR)).toBe(true);
+    expect(Number.isInteger(r.totalIDR)).toBe(true);
   });
 });

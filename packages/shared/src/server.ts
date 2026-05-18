@@ -13,3 +13,27 @@ export {
   ConciergeOrderInput,
 } from "./types/order";
 export type { ConciergeOrderResult } from "./types/order";
+export {
+  SearchInputMode,
+  ZipCode,
+  SearchLocation,
+  SourcingSearchInput,
+  NormalizedSourcingItem,
+  SourcingSearchResponse,
+  SelectedItemPayload,
+  CourierPreference,
+  CheckoutQuoteBreakdown,
+  CheckoutQuoteResponse,
+} from "./types/discovery";
+export type {
+  SearchInputMode as SearchInputModeType,
+  ZipCode as ZipCodeType,
+  SearchLocation as SearchLocationType,
+  SourcingSearchInput as SourcingSearchInputType,
+  NormalizedSourcingItem as NormalizedSourcingItemType,
+  SourcingSearchResponse as SourcingSearchResponseType,
+  SelectedItemPayload as SelectedItemPayloadType,
+  CourierPreference as CourierPreferenceType,
+  CheckoutQuoteBreakdown as CheckoutQuoteBreakdownType,
+  CheckoutQuoteResponse as CheckoutQuoteResponseType,
+} from "./types/discovery";

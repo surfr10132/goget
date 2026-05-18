@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => {
   const state = {
     enqueueRpcResult: { error: null as SupabaseError },
     claimRpcResult: { data: [] as Array<Record<string, unknown>>, error: null as SupabaseError },
-    orderJobUpdates: [] as Array<Record<string, unknown>>,
+    tableUpdates: [] as Array<{ table: string; payload: Record<string, unknown> }>,
     updateResult: { error: null as SupabaseError },
     bookResponses: [] as Response[],
   };
@@ -28,9 +28,9 @@ const mocks = vi.hoisted(() => {
       }
       return Promise.resolve({ error: { message: `unexpected rpc: ${fnName}` } });
     }),
-    from: vi.fn((_table: string) => ({
+    from: vi.fn((table: string) => ({
       update: vi.fn((payload: Record<string, unknown>) => {
-        state.orderJobUpdates.push(payload);
+        state.tableUpdates.push({ table, payload });
         let builder: {
           eq: (column: string, value: unknown) => typeof builder;
           then: (
@@ -77,7 +77,7 @@ describe("order-jobs reliability", () => {
     vi.clearAllMocks();
     mocks.state.enqueueRpcResult = { error: null };
     mocks.state.claimRpcResult = { data: [], error: null };
-    mocks.state.orderJobUpdates = [];
+    mocks.state.tableUpdates = [];
     mocks.state.updateResult = { error: null };
     mocks.state.bookResponses = [];
   });
@@ -115,7 +115,10 @@ describe("order-jobs reliability", () => {
     const result = await processOrderJobs(5);
 
     expect(result).toEqual({ claimed: 1, succeeded: 1, retried: 0, failed: 0 });
-    expect(mocks.state.orderJobUpdates[0]).toMatchObject({
+    const orderJobUpdate = mocks.state.tableUpdates.find(
+      update => update.table === "order_jobs" && update.payload.status === "succeeded",
+    );
+    expect(orderJobUpdate?.payload).toMatchObject({
       status: "succeeded",
       attempt_count: 1,
       last_error: null,
@@ -143,9 +146,12 @@ describe("order-jobs reliability", () => {
     const result = await processOrderJobs(5);
 
     expect(result).toEqual({ claimed: 1, succeeded: 0, retried: 1, failed: 0 });
-    expect(mocks.state.orderJobUpdates[0].status).toBe("pending");
-    expect(mocks.state.orderJobUpdates[0].attempt_count).toBe(1);
-    expect(typeof mocks.state.orderJobUpdates[0].run_at).toBe("string");
+    const orderJobUpdate = mocks.state.tableUpdates.find(
+      update => update.table === "order_jobs" && update.payload.status === "pending",
+    );
+    expect(orderJobUpdate?.payload.status).toBe("pending");
+    expect(orderJobUpdate?.payload.attempt_count).toBe(1);
+    expect(typeof orderJobUpdate?.payload.run_at).toBe("string");
     expect(mocks.mockTransitionOrderStatus).not.toHaveBeenCalled();
   });
 
@@ -170,7 +176,10 @@ describe("order-jobs reliability", () => {
     const result = await processOrderJobs(5);
 
     expect(result).toEqual({ claimed: 1, succeeded: 0, retried: 0, failed: 1 });
-    expect(mocks.state.orderJobUpdates[0]).toMatchObject({
+    const orderJobUpdate = mocks.state.tableUpdates.find(
+      update => update.table === "order_jobs" && update.payload.status === "failed",
+    );
+    expect(orderJobUpdate?.payload).toMatchObject({
       status: "failed",
       attempt_count: 3,
     });

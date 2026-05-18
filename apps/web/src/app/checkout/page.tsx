@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   computeFees,
   formatIDR,
@@ -16,6 +17,7 @@ import { ProductWebView } from "@/components/ProductWebView";
 import { OrderConfirmation } from "@/components/OrderConfirmation";
 
 type Step = "handoff" | "confirm" | "address" | "courier" | "review" | "done";
+type OrderCreateIdempotencyContext = { fingerprint: string; key: string };
 
 interface Rate {
   provider: "gosend" | "grab";
@@ -27,6 +29,11 @@ interface Rate {
   rateToken: string;
 }
 
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  return "Request failed";
+}
+
 const SOURCE_PARAM_TO_PRODUCT: Record<string, ProductListing["source"]> = {
   tokopedia: "tokopedia",
   shopee:    "shopee",
@@ -36,6 +43,14 @@ const SOURCE_PARAM_TO_PRODUCT: Record<string, ProductListing["source"]> = {
   manual:    "manual",
   nearby:    "manual",
 };
+
+function createIdempotencyKey() {
+  const maybeCrypto = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+  if (typeof maybeCrypto?.randomUUID === "function") {
+    return maybeCrypto.randomUUID();
+  }
+  return `idem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 function CheckoutInner() {
   const params = useSearchParams();
@@ -92,6 +107,7 @@ function CheckoutInner() {
   const [placeError, setPlaceError] = useState<string | null>(null);
   const [orderResult, setOrderResult] = useState<ConciergeOrderResult | null>(null);
   const [notes, setNotes] = useState("");
+  const idempotencyContextRef = useRef<OrderCreateIdempotencyContext | null>(null);
 
   useEffect(() => {
     if (step !== "courier") return;
@@ -145,15 +161,23 @@ function CheckoutInner() {
         },
         notes: notes.trim() || undefined,
       };
+      const requestFingerprint = JSON.stringify(body);
+      const existingContext = idempotencyContextRef.current;
+      const idempotencyKey =
+        existingContext && existingContext.fingerprint === requestFingerprint
+          ? existingContext.key
+          : createIdempotencyKey();
+      idempotencyContextRef.current = { fingerprint: requestFingerprint, key: idempotencyKey };
       const data = await api<ConciergeOrderResult>("/api/orders/concierge", {
         method: "POST",
+        headers: { "Idempotency-Key": idempotencyKey },
         body: JSON.stringify(body),
       });
       setOrderResult(data);
       setStep("done");
       if (data.payment.redirectUrl) window.location.href = data.payment.redirectUrl;
-    } catch (e: any) {
-      setPlaceError(e.message);
+    } catch (error: unknown) {
+      setPlaceError(toErrorMessage(error));
     } finally {
       setPlacing(false);
     }
@@ -199,20 +223,32 @@ function CheckoutInner() {
         </div>
       )}
 
-      <div className="flex items-start justify-between gap-3">
-        <div>
+      <div className="flex items-start gap-3">
+        {thumbnail && (
+          <Image
+            src={thumbnail}
+            alt={title}
+            width={80}
+            height={80}
+            className="w-20 h-20 rounded-xl object-cover bg-gray-100 border border-gray-200 shrink-0"
+            unoptimized
+          />
+        )}
+        <div className="flex-1 flex items-start justify-between gap-3">
+          <div>
           <h1 className="text-xl font-bold line-clamp-2">{title}</h1>
           {merchant && <p className="text-sm text-gray-500 mt-0.5">🏪 {merchant}</p>}
           {distanceKm !== null && step !== "handoff" && (
             <p className="text-sm text-gray-500">📍 {distanceKm.toFixed(1)} km from you</p>
           )}
-        </div>
-        {priceDisplay > 0 && (
-          <div className="text-right shrink-0">
-            <div className="text-gray-500 text-xs">as listed</div>
-            <div className="text-brand-700 font-bold text-lg">{formatIDR(priceDisplay)}</div>
           </div>
-        )}
+          {priceDisplay > 0 && (
+            <div className="text-right shrink-0">
+              <div className="text-gray-500 text-xs">as listed</div>
+              <div className="text-brand-700 font-bold text-lg">{formatIDR(priceDisplay)}</div>
+            </div>
+          )}
+          </div>
       </div>
 
       {step === "handoff" && (

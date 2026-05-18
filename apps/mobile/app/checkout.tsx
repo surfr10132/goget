@@ -1,9 +1,9 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator, Pressable, ScrollView, StyleSheet,
-  Text, TextInput, View,
+  Text, TextInput, View, Image,
 } from "react-native";
 import {
   computeFees,
@@ -25,7 +25,13 @@ interface Rate {
   rateToken: string;
 }
 
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  return "Request failed";
+}
+
 type Step = "confirm" | "address" | "courier" | "review" | "done";
+type OrderCreateIdempotencyContext = { fingerprint: string; key: string };
 
 const SOURCE_MAP: Record<string, ProductListing["source"]> = {
   tokopedia: "tokopedia",
@@ -36,6 +42,14 @@ const SOURCE_MAP: Record<string, ProductListing["source"]> = {
   manual: "manual",
   nearby: "manual",
 };
+
+function createIdempotencyKey() {
+  const maybeCrypto = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+  if (typeof maybeCrypto?.randomUUID === "function") {
+    return maybeCrypto.randomUUID();
+  }
+  return `idem-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 export default function Checkout() {
   const router = useRouter();
@@ -49,6 +63,7 @@ export default function Checkout() {
   const productSource = SOURCE_MAP[params.source ?? "manual"] ?? "manual";
   const title = params.title ?? "Item";
   const priceDisplay = Number(params.price ?? 0);
+  const thumbnail = params.thumbnail ?? "";
   const merchant = params.merchant ?? "";
   const sourceUrl = params.sourceUrl ?? "";
   const pickupAddress = params.pickupAddress ?? "";
@@ -100,6 +115,7 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
   const [orderResult, setOrderResult] = useState<ConciergeOrderResult | null>(null);
+  const idempotencyContextRef = useRef<OrderCreateIdempotencyContext | null>(null);
 
   useEffect(() => {
     if (step !== "courier" || !hasGeo) return;
@@ -159,8 +175,16 @@ export default function Checkout() {
         },
         notes: notes.trim() || undefined,
       };
+      const requestFingerprint = JSON.stringify(body);
+      const existingContext = idempotencyContextRef.current;
+      const idempotencyKey =
+        existingContext && existingContext.fingerprint === requestFingerprint
+          ? existingContext.key
+          : createIdempotencyKey();
+      idempotencyContextRef.current = { fingerprint: requestFingerprint, key: idempotencyKey };
       const data = await api<ConciergeOrderResult>("/api/orders/concierge", {
         method: "POST",
+        headers: { "Idempotency-Key": idempotencyKey },
         body: JSON.stringify(body),
       });
       setOrderResult(data);
@@ -175,8 +199,8 @@ export default function Checkout() {
           // Ignore browser handoff failures; user can still track/retry from orders.
         }
       }
-    } catch (e: any) {
-      setPlaceError(e.message);
+    } catch (error: unknown) {
+      setPlaceError(toErrorMessage(error));
     } finally {
       setPlacing(false);
     }
@@ -215,6 +239,13 @@ export default function Checkout() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#fff" }} contentContainerStyle={s.container}>
+      {!!thumbnail && (
+        <Image
+          source={{ uri: thumbnail }}
+          style={s.photo}
+          resizeMode="cover"
+        />
+      )}
       <View>
         <Text style={s.h1} numberOfLines={2}>{title}</Text>
         {merchant ? <Text style={s.meta}>🏪 {merchant}</Text> : null}
@@ -383,6 +414,12 @@ const s = StyleSheet.create({
   input: {
     borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 10, fontSize: 15,
+  },
+  photo: {
+    width: "100%",
+    height: 180,
+    borderRadius: 14,
+    backgroundColor: "#f3f4f6",
   },
   muted: { backgroundColor: "#f9fafb", borderRadius: 12, padding: 12 },
   mutedText: { fontSize: 13, color: "#4b5563" },

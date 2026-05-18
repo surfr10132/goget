@@ -75,37 +75,45 @@ Users can find niche products online but still face friction in pickup and relia
 
 ### FR-1 Sourcing
 
-- Must return normalized item cards: source, title, price, URL, image.
-- Must support optional location-aware filtering and distance limits.
+- Must accept either a product URL or a keyword query.
+- Must support location-aware filtering within a 35km radius, with zipcode fallback when precise coordinates are unavailable.
+- Must return normalized item cards: source, title, price, URL, image, seller/location metadata, and ranking context.
 - Must support test seed sourcing without live provider credentials.
 
 ### FR-2 Checkout and pricing
 
 - Must compute fees from courier rate + flat service fee + PPN.
-- Must persist selected courier rate snapshot for later booking/audit.
+- Must expose checkout breakdown where `itemSubtotalIDR` is informational and `totalIDR` represents GoGet charges only (courier + service + tax).
+- Must persist selected listing, checkout fee, and courier preference snapshots for later booking/audit.
 - Must support “quick” and “concierge” order creation paths.
+- Must accept optional courier linked-account metadata (`useLinkedAccount`, `linkedAccountRef`) in quick/concierge checkout payloads.
 
 ### FR-3 Payment
 
 - Must create payment attempts with unique provider order IDs.
+- Must require client idempotency keys for order creation routes and safely replay previously completed responses.
 - Must process Midtrans webhook idempotently.
 - Must transition order to paid/failed based on verified payment status.
 
 ### FR-4 Delivery orchestration
 
 - Must book courier only after payment success.
+- Must run courier booking retries via internal job processing with bounded attempts/backoff.
 - Must map courier provider statuses into GoGet canonical order states.
 - Must provide user-visible tracking timeline.
+- Must expose booking retry visibility (`state`, attempt counters, last error, next retry time) in order list and tracking read models.
 
 ### FR-5 Security and data access
 
 - API routes under `/api/*` require authenticated user context.
 - User data access must be protected by Supabase RLS and ownership checks.
 - Webhook endpoints must be signature-verified and idempotent.
+- Internal retry processing endpoint must be protected by a dedicated process token.
 
 ## Non-functional requirements
 
 - Reliability: webhook processing must be idempotent and replay-safe.
+- Reliability: courier booking retries must be idempotent, bounded, and auditable.
 - Performance: search and rate quote routes should return within interactive UX thresholds.
 - Observability: order and webhook events must provide enough audit detail for support.
 - Compliance-ready: design must preserve clear service-role boundary (delivery service vs item resale).

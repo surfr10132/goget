@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, Image } from "react-native";
 import { formatIDR } from "@goget/shared";
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -48,6 +48,7 @@ export default function ProductWebView() {
   const source = (p.source ?? "manual") as keyof typeof SOURCE_LABEL;
   const label = SOURCE_LABEL[source] ?? "the store";
   const url = p.sourceUrl ?? "";
+  const thumbnail = p.thumbnail ?? "";
   const safe = !!url && isAllowedHost(url);
   const price = Number(p.price ?? 0);
   const [opening, setOpening] = useState(false);
@@ -88,6 +89,13 @@ export default function ProductWebView() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#fff" }} contentContainerStyle={s.container}>
       <View style={s.card}>
+        {!!thumbnail && (
+          <Image
+            source={{ uri: thumbnail }}
+            style={s.photo}
+            resizeMode="cover"
+          />
+        )}
         <Text style={s.sourceTag}>{label.toUpperCase()}</Text>
         <Text style={s.title} numberOfLines={3}>{p.title ?? "Item"}</Text>
         {p.merchant ? <Text style={s.meta}>🏪 {p.merchant}</Text> : null}
@@ -127,6 +135,13 @@ const s = StyleSheet.create({
   container: { padding: 16, gap: 14 },
   card: {
     borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 16, padding: 16, gap: 4,
+  },
+  photo: {
+    width: "100%",
+    height: 180,
+    borderRadius: 12,
+    backgroundColor: "#f3f4f6",
+    marginBottom: 10,
   },
   sourceTag: { fontSize: 11, color: "#9ca3af", letterSpacing: 1 },
   title: { fontSize: 17, fontWeight: "600", color: "#111827" },

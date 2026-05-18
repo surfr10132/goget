@@ -76,6 +76,8 @@ const CourierSelection = z.object({
   etaMinutes: z.number().int().nonnegative().optional(),
   distanceKm: z.number().nonnegative().optional(),
   rateToken: z.string().optional(),
+  useLinkedAccount: z.boolean().optional(),
+  linkedAccountRef: z.string().min(1).optional(),
 });
 
 /** Body of POST /api/orders/concierge. */
@@ -96,6 +98,8 @@ export interface ConciergeOrderResult {
     status: ConciergeOrderStatus;
     totalIDR: IDR;
     breakdown: {
+      itemSubtotalIDR: IDR;
+      deliveryFeeIDR: IDR;
       courierFeeIDR: IDR;
       serviceFeeIDR: IDR;
       taxIDR: IDR;
@@ -103,6 +107,7 @@ export interface ConciergeOrderResult {
     };
   };
   payment: {
+    amountIDR?: IDR;
     snapToken: string | null;
     redirectUrl: string | null;
   };

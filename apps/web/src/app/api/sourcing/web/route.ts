@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-import { getImageUrl } from "@goget/shared/sourcing";
 import { getClientIp, rateLimitHeaders, takeRateLimitToken } from "@/lib/server-rate-limit";
 import { parseJsonBody } from "@/app/api/_lib/validation";
 
@@ -76,14 +75,31 @@ async function fetchOgImage(url: string): Promise<string | null> {
     }
     reader.cancel();
 
-    // Match either attribute order for og:image
-    const m =
-      html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ??
-      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    const patterns = [
+      /<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+      /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image(?::secure_url)?["'][^>]*>/i,
+      /<meta[^>]+name=["']twitter:image(?::src)?["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+      /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image(?::src)?["'][^>]*>/i,
+      /<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["'][^>]*>/i,
+      /<img[^>]+src=["']([^"']+)["'][^>]*>/i,
+    ];
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      const candidate = match?.[1];
+      if (!candidate) continue;
+      try {
+        const absolute = new URL(candidate.trim().replaceAll("&amp;", "&"), url).toString();
+        if (absolute.startsWith("http://") || absolute.startsWith("https://")) {
+          ogCache.set(url, absolute);
+          return absolute;
+        }
+      } catch {
+        // Skip invalid candidate and continue.
+      }
+    }
 
-    const imageUrl = m?.[1] ?? null;
-    ogCache.set(url, imageUrl);
-    return imageUrl;
+    ogCache.set(url, null);
+    return null;
   } catch {
     ogCache.set(url, null);
     return null;
@@ -227,15 +243,15 @@ export async function POST(req: NextRequest) {
               })()
             : undefined;
 
-        // Priority: Claude's imageUrl → og:image from the store page → category fallback
-        const categoryFallback = getImageUrl(query);
+        // Source image policy: prefer source-provided image and best-effort metadata extraction.
+        const imageUrl = item.imageUrl || ogImage || undefined;
 
         return {
           source: "web",
           externalUrl: item.externalUrl ?? "",
           title: item.title,
           description: item.description ?? "",
-          imageUrl: item.imageUrl || ogImage || categoryFallback,
+          imageUrl,
           priceIDR: item.priceIDR ?? 0,
           merchantName: item.merchantName,
           pickupAddress: item.pickupAddress ?? "",

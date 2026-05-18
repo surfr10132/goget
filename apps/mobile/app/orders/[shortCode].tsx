@@ -19,6 +19,7 @@ type OrderStatus =
   | "refunded"
   | "failed"
   | "canceled";
+type FulfillmentRetryState = "idle" | "pending" | "processing" | "retrying" | "succeeded" | "failed";
 
 interface TrackingResponse {
   short_code: string;
@@ -42,6 +43,14 @@ interface TrackingResponse {
     is_active: boolean;
   }[] | null;
   events: { status: OrderStatus; note?: string | null; created_at: string }[] | null;
+  fulfillment_retry?: {
+    state: FulfillmentRetryState;
+    attemptCount: number;
+    maxAttempts: number;
+    lastError: string | null;
+    nextRetryAt: string | null;
+    updatedAt: string;
+  } | null;
 }
 
 const TERMINAL: readonly OrderStatus[] = ["delivered", "refunded", "failed", "canceled"];
@@ -141,6 +150,11 @@ export default function OrderDetailScreen() {
   const isPendingPayment = order.status === "pending_payment";
   const isCancelled = order.status === "canceled" || order.status === "failed";
   const activeDelivery = order.delivery?.find(d => d.is_active) ?? order.delivery?.[0] ?? null;
+  const retry = order.fulfillment_retry;
+  const retryState = retry?.state;
+  const retryInProgress =
+    retryState === "pending" || retryState === "processing" || retryState === "retrying";
+  const retryFailed = retryState === "failed";
   const sortedEvents = (order.events ?? [])
     .slice()
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -192,6 +206,28 @@ export default function OrderDetailScreen() {
           <Text style={s.warnText}>
             Payment is pending. If your Midtrans window was closed, complete payment and refresh.
           </Text>
+        </View>
+      )}
+      {retryInProgress && retry && (
+        <View style={s.retryInfoBox}>
+          <Text style={s.retryInfoTitle}>Courier booking retry in progress</Text>
+          <Text style={s.retryInfoText}>
+            Attempt {retry.attemptCount} / {Math.max(retry.maxAttempts, retry.attemptCount)}
+            {retry.nextRetryAt
+              ? ` · next retry ${new Date(retry.nextRetryAt).toLocaleString("id-ID")}`
+              : ""}
+          </Text>
+          {!!retry.lastError && <Text style={s.retryInfoText}>Last error: {retry.lastError}</Text>}
+        </View>
+      )}
+      {retryFailed && retry && !isCancelled && (
+        <View style={s.retryErrorBox}>
+          <Text style={s.retryErrorTitle}>Courier booking retries exhausted</Text>
+          <Text style={s.retryErrorText}>
+            Attempts: {retry.attemptCount}
+            {retry.maxAttempts ? ` / ${retry.maxAttempts}` : ""}
+          </Text>
+          {!!retry.lastError && <Text style={s.retryErrorText}>Last error: {retry.lastError}</Text>}
         </View>
       )}
 
@@ -275,6 +311,18 @@ const s = StyleSheet.create({
     borderRadius: 14, padding: 12,
   },
   warnText: { color: "#92400e", fontSize: 12 },
+  retryInfoBox: {
+    borderWidth: 1, borderColor: "#fde68a", backgroundColor: "#fffbeb",
+    borderRadius: 14, padding: 12, gap: 4,
+  },
+  retryInfoTitle: { color: "#92400e", fontSize: 12, fontWeight: "700" },
+  retryInfoText: { color: "#92400e", fontSize: 12 },
+  retryErrorBox: {
+    borderWidth: 1, borderColor: "#fecaca", backgroundColor: "#fef2f2",
+    borderRadius: 14, padding: 12, gap: 4,
+  },
+  retryErrorTitle: { color: "#b91c1c", fontSize: 12, fontWeight: "700" },
+  retryErrorText: { color: "#b91c1c", fontSize: 12 },
   failedBox: {
     borderWidth: 1, borderColor: "#fecaca", backgroundColor: "#fef2f2",
     borderRadius: 14, padding: 14, alignItems: "center",

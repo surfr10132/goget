@@ -20,6 +20,7 @@ type OrderStatus =
   | "refunded"
   | "failed"
   | "canceled";
+type FulfillmentRetryState = "idle" | "pending" | "processing" | "retrying" | "succeeded" | "failed";
 
 interface OrderRow {
   id: string;
@@ -34,6 +35,14 @@ interface OrderRow {
   } | null;
   delivery: { provider: string; tier: string; is_active: boolean }[] | null;
   address: { line1: string; city: string } | null;
+  fulfillment_retry?: {
+    state: FulfillmentRetryState;
+    attemptCount: number;
+    maxAttempts: number;
+    lastError: string | null;
+    nextRetryAt: string | null;
+    updatedAt: string;
+  } | null;
 }
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -66,6 +75,11 @@ const STATUS_COLOR: Record<OrderStatus, string> = {
 
 const TERMINAL: readonly OrderStatus[] = ["delivered", "refunded", "failed", "canceled"];
 
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  return "Request failed";
+}
+
 export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<OrderRow[]>([]);
@@ -77,8 +91,8 @@ export default function OrdersPage() {
       const data = await api<{ orders: OrderRow[] }>("/api/orders");
       setOrders(data.orders ?? []);
       setError(null);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (error: unknown) {
+      setError(toErrorMessage(error));
     }
   }, []);
 
@@ -165,6 +179,11 @@ export default function OrdersPage() {
       <ul className="space-y-3">
         {orders.map(order => {
           const courier = order.delivery?.find(d => d.is_active) ?? order.delivery?.[0];
+          const retry = order.fulfillment_retry;
+          const retryState = retry?.state;
+          const showRetry =
+            retryState === "pending" || retryState === "processing" || retryState === "retrying";
+          const showRetryFailed = retryState === "failed" && order.status !== "failed";
           return (
             <li key={order.id}>
               <Link
@@ -192,6 +211,16 @@ export default function OrdersPage() {
                   </span>
                   <span className="font-bold text-brand-700">{formatIDR(order.total_idr)}</span>
                 </div>
+                {showRetry && retry && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1">
+                    Booking retry in progress · attempt {retry.attemptCount} / {Math.max(retry.maxAttempts, retry.attemptCount)}
+                  </p>
+                )}
+                {showRetryFailed && retry?.lastError && (
+                  <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1">
+                    Booking retry failed: {retry.lastError}
+                  </p>
+                )}
 
                 <div className="text-xs text-gray-400 space-y-0.5">
                   {order.quote?.pickup_address && (

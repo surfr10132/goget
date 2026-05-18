@@ -43,7 +43,7 @@ export function LocationPicker({ onLocation }: Props) {
   const reverseSeq = useRef(0);
   const suppressSearchRef = useRef(false);
 
-  async function useGPS() {
+  async function requestGPSLocation() {
     setBusy(true);
     setErr(null);
     try {
@@ -56,7 +56,7 @@ export function LocationPicker({ onLocation }: Props) {
     }
   }
 
-  useEffect(() => { useGPS(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { requestGPSLocation(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (suppressSearchRef.current) {
@@ -163,7 +163,7 @@ export function LocationPicker({ onLocation }: Props) {
       </div>
 
       <button
-        onClick={useGPS}
+        onClick={requestGPSLocation}
         disabled={busy}
         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-brand-500 text-brand-600 font-medium text-sm hover:bg-brand-50 disabled:opacity-60"
       >

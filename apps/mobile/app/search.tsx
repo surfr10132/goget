@@ -25,7 +25,7 @@ interface Item {
 const DEFAULT_DROP = { lat: -6.2088, lng: 106.8456, label: "Jakarta" };
 
 export default function SearchScreen() {
-  const { q } = useLocalSearchParams<{ q: string }>();
+  const { q, referenceUrl } = useLocalSearchParams<{ q: string; referenceUrl?: string }>();
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,40 +55,30 @@ export default function SearchScreen() {
     setItems([]);
 
     const near = { lat: DEFAULT_DROP.lat, lng: DEFAULT_DROP.lng };
+    const searchMode = referenceUrl ? "url" : "keyword";
+    const requestBody = {
+      mode: searchMode,
+      query: q,
+      referenceUrl,
+      location: {
+        near,
+        maxDistanceKm: 35,
+      },
+      limit: 12,
+    };
 
-    // Hit both the curated test directory AND real sourcing in parallel —
-    // mirrors how the web search page merges results from multiple sources.
-    Promise.allSettled([
-      api<{ items: Item[] }>("/api/sourcing/test", {
-        method: "POST",
-        body: JSON.stringify({ query: q, near, limit: 12 }),
-      }),
-      api<{ items: Item[] }>("/api/sourcing/search", {
-        method: "POST",
-        body: JSON.stringify({ query: q, near, limit: 12 }),
-      }),
-    ])
-      .then(results => {
-        const merged: Item[] = [];
-        const seen = new Set<string>();
-        for (const r of results) {
-          if (r.status !== "fulfilled") continue;
-          for (const it of r.value.items ?? []) {
-            const key = `${(it.merchantName ?? "").toLowerCase()}|${it.source}|${it.title}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
-            merged.push(it);
-          }
-        }
-        merged.sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
-        setItems(merged);
-        if (merged.length === 0) {
-          const firstErr = results.find(r => r.status === "rejected") as PromiseRejectedResult | undefined;
-          if (firstErr) setError(String(firstErr.reason?.message ?? firstErr.reason));
-        }
+    api<{ items: Item[] }>("/api/sourcing/search", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    })
+      .then(data => {
+        const sourcedItems = (data.items ?? [])
+          .sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
+        setItems(sourcedItems);
       })
+      .catch(err => setError(String(err?.message ?? err)))
       .finally(() => setLoading(false));
-  }, [q, authChecked]);
+  }, [q, authChecked, referenceUrl]);
 
   if (!authChecked || loading) {
     return <View style={s.center}><ActivityIndicator /></View>;

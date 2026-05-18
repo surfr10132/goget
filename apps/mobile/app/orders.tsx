@@ -20,6 +20,7 @@ type OrderStatus =
   | "refunded"
   | "failed"
   | "canceled";
+type FulfillmentRetryState = "idle" | "pending" | "processing" | "retrying" | "succeeded" | "failed";
 
 interface OrderRow {
   id: string;
@@ -34,6 +35,14 @@ interface OrderRow {
   } | null;
   delivery: { provider: string; tier: string; is_active: boolean }[] | null;
   address: { line1: string; city: string } | null;
+  fulfillment_retry?: {
+    state: FulfillmentRetryState;
+    attemptCount: number;
+    maxAttempts: number;
+    lastError: string | null;
+    nextRetryAt: string | null;
+    updatedAt: string;
+  } | null;
 }
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -161,6 +170,11 @@ export default function Orders() {
       renderItem={({ item }) => {
         const courier = item.delivery?.find(d => d.is_active) ?? item.delivery?.[0];
         const color = STATUS_COLOR[item.status];
+        const retry = item.fulfillment_retry;
+        const retryState = retry?.state;
+        const showRetry =
+          retryState === "pending" || retryState === "processing" || retryState === "retrying";
+        const showRetryFailed = retryState === "failed" && item.status !== "failed";
         return (
           <Pressable
             style={({ pressed }) => [s.card, pressed && { opacity: 0.86 }]}
@@ -197,6 +211,18 @@ export default function Orders() {
               </Text>
               <Text style={s.cardTotal}>{formatIDR(item.total_idr)}</Text>
             </View>
+            {showRetry && retry && (
+              <View style={s.retryInfo}>
+                <Text style={s.retryInfoText}>
+                  Booking retry in progress · attempt {retry.attemptCount} / {Math.max(retry.maxAttempts, retry.attemptCount)}
+                </Text>
+              </View>
+            )}
+            {showRetryFailed && retry?.lastError && (
+              <View style={s.retryError}>
+                <Text style={s.retryErrorText}>Booking retry failed: {retry.lastError}</Text>
+              </View>
+            )}
 
             {item.quote?.pickup_address && (
               <Text style={s.cardAddr}>📍 Pickup: {item.quote.pickup_address}</Text>
@@ -252,4 +278,14 @@ const s = StyleSheet.create({
     backgroundColor: "#fef2f2", borderWidth: 1, borderColor: "#fecaca",
   },
   errText: { color: "#b91c1c" },
+  retryInfo: {
+    borderWidth: 1, borderColor: "#fde68a", backgroundColor: "#fffbeb",
+    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6,
+  },
+  retryInfoText: { color: "#92400e", fontSize: 11, fontWeight: "500" },
+  retryError: {
+    borderWidth: 1, borderColor: "#fecaca", backgroundColor: "#fef2f2",
+    borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6,
+  },
+  retryErrorText: { color: "#b91c1c", fontSize: 11, fontWeight: "500" },
 });

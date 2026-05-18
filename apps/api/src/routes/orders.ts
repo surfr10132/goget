@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { z } from "zod";
-import { computeFees, ConciergeOrderInput } from "@goget/shared/server";
+import { computeCheckoutPricing, computeFees, ConciergeOrderInput } from "@goget/shared/server";
 import { gosend, grab, midtrans, supabase } from "../clients";
 import { env } from "../env";
 import { transitionOrderStatus } from "../services/order-state-machine";
@@ -60,6 +60,8 @@ const QuickOrderInput = z.object({
     etaMinutes: z.number().int().nonnegative().optional(),
     distanceKm: z.number().nonnegative().optional(),
     rateToken: z.string().optional(),
+    useLinkedAccount: z.boolean().default(false),
+    linkedAccountRef: z.string().min(1).optional(),
   }),
 });
 
@@ -253,6 +255,90 @@ function normalizeReplayBody(value: unknown): Record<string, unknown> {
   return {};
 }
 
+export function buildOrderCheckoutBreakdown(input: {
+  itemSubtotalIDR: number;
+  deliveryFeeIDR: number;
+}) {
+  return computeCheckoutPricing({
+    itemSubtotalIDR: input.itemSubtotalIDR,
+    deliveryFeeIDR: input.deliveryFeeIDR,
+  });
+}
+
+type OrderSnapshotInput = {
+  selectedListing: {
+    source: string;
+    title: string;
+    externalUrl?: string | null;
+    imageUrl?: string | null;
+    sellerName?: string | null;
+    pickupAddress?: string | null;
+    itemSubtotalIDR: number;
+  };
+  breakdown: ReturnType<typeof buildOrderCheckoutBreakdown>;
+  courierPreference: {
+    provider: string;
+    tier: string;
+    useLinkedAccount?: boolean;
+    linkedAccountRef?: string | null;
+  };
+};
+
+type OrderSnapshotPayload = {
+  selected_listing_snapshot: Record<string, unknown>;
+  checkout_fee_snapshot: ReturnType<typeof buildOrderCheckoutBreakdown>;
+  courier_preference_snapshot: Record<string, unknown>;
+  booking_retry_state: "idle";
+  booking_retry_attempt_count: number;
+  booking_retry_max_attempts: number;
+  booking_retry_last_error: null;
+  booking_retry_next_retry_at: null;
+  booking_retry_updated_at: string;
+};
+
+export function buildOrderSnapshotPayload(input: OrderSnapshotInput): OrderSnapshotPayload {
+  return {
+    selected_listing_snapshot: compactSnapshot({
+      source: input.selectedListing.source,
+      title: input.selectedListing.title,
+      externalUrl: input.selectedListing.externalUrl ?? undefined,
+      imageUrl: input.selectedListing.imageUrl ?? undefined,
+      sellerName: input.selectedListing.sellerName ?? undefined,
+      pickupAddress: input.selectedListing.pickupAddress ?? undefined,
+      itemSubtotalIDR: input.selectedListing.itemSubtotalIDR,
+    }),
+    checkout_fee_snapshot: {
+      ...input.breakdown,
+    },
+    courier_preference_snapshot: compactSnapshot({
+      provider: input.courierPreference.provider,
+      tier: input.courierPreference.tier,
+      useLinkedAccount: Boolean(input.courierPreference.useLinkedAccount),
+      linkedAccountRef: input.courierPreference.linkedAccountRef ?? undefined,
+    }),
+    booking_retry_state: "idle",
+    booking_retry_attempt_count: 0,
+    booking_retry_max_attempts: 0,
+    booking_retry_last_error: null,
+    booking_retry_next_retry_at: null,
+    booking_retry_updated_at: new Date().toISOString(),
+  };
+}
+
+async function persistOrderSnapshotPayload(orderId: string, payload: OrderSnapshotPayload): Promise<void> {
+  const { error } = await supabase
+    .from("orders")
+    .update(payload as never)
+    .eq("id", orderId);
+  if (error) throw new Error(error.message);
+}
+
+function compactSnapshot(input: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined && value !== null),
+  );
+}
+
 /**
  * POST /api/orders
  * Confirm a chosen quote + courier and create:
@@ -273,12 +359,16 @@ orders.post("/", async c => {
     handler: async () => {
       const { data: quote } = await supabase
         .from("quotes")
-        .select("id, request_id, title, item_price_idr, item_requests(user_id)")
+        .select("id, request_id, source, title, external_url, image_url, pickup_address, item_price_idr, item_requests(user_id)")
         .eq("id", input.quoteId)
         .returns<{
           id: string;
           request_id: string;
+          source: string;
           title: string;
+          external_url: string | null;
+          image_url: string | null;
+          pickup_address: string | null;
           item_price_idr: number;
           item_requests: { user_id: string } | null;
         }[]>()
@@ -304,6 +394,26 @@ orders.post("/", async c => {
 
       // Concierge model: fees no longer include the item price (paid on marketplace).
       const fees = computeFees({ courierFeeIDR: rate.price_idr });
+      const breakdown = buildOrderCheckoutBreakdown({
+        itemSubtotalIDR: quote.item_price_idr,
+        deliveryFeeIDR: rate.price_idr,
+      });
+      const snapshotPayload = buildOrderSnapshotPayload({
+        selectedListing: {
+          source: quote.source,
+          title: quote.title,
+          externalUrl: quote.external_url,
+          imageUrl: quote.image_url,
+          pickupAddress: quote.pickup_address,
+          itemSubtotalIDR: quote.item_price_idr,
+        },
+        breakdown,
+        courierPreference: {
+          provider: rate.provider,
+          tier: rate.tier,
+          useLinkedAccount: false,
+        },
+      });
 
       // selected_rate_id is set inline on the orders row so bookCourierForOrder
       // can read it directly — no more digging through order_events meta.
@@ -322,6 +432,15 @@ orders.post("/", async c => {
         total_idr: number;
         status: "pending_payment";
         selected_rate_id: string;
+        selected_listing_snapshot: Record<string, unknown>;
+        checkout_fee_snapshot: ReturnType<typeof buildOrderCheckoutBreakdown>;
+        courier_preference_snapshot: Record<string, unknown>;
+        booking_retry_state: "idle";
+        booking_retry_attempt_count: number;
+        booking_retry_max_attempts: number;
+        booking_retry_last_error: null;
+        booking_retry_next_retry_at: null;
+        booking_retry_updated_at: string;
       };
       const orderInsert: OrderInsert = {
         user_id: userId,
@@ -337,6 +456,15 @@ orders.post("/", async c => {
         total_idr: fees.totalIDR,
         status: "pending_payment",
         selected_rate_id: input.courierRateId,
+        selected_listing_snapshot: snapshotPayload.selected_listing_snapshot,
+        checkout_fee_snapshot: snapshotPayload.checkout_fee_snapshot,
+        courier_preference_snapshot: snapshotPayload.courier_preference_snapshot,
+        booking_retry_state: snapshotPayload.booking_retry_state,
+        booking_retry_attempt_count: snapshotPayload.booking_retry_attempt_count,
+        booking_retry_max_attempts: snapshotPayload.booking_retry_max_attempts,
+        booking_retry_last_error: snapshotPayload.booking_retry_last_error,
+        booking_retry_next_retry_at: snapshotPayload.booking_retry_next_retry_at,
+        booking_retry_updated_at: snapshotPayload.booking_retry_updated_at,
       };
       const { data: order, error: oErr } = await supabase
         .from("orders")
@@ -392,8 +520,8 @@ orders.post("/", async c => {
         .eq("id", paymentAttempt.payment_id);
 
       return c.json({
-        order: { id: order.id, shortCode: order.short_code, totalIDR: fees.totalIDR, breakdown: fees },
-        payment: { snapToken: snap.token, redirectUrl: snap.redirectUrl },
+        order: { id: order.id, shortCode: order.short_code, totalIDR: fees.totalIDR, breakdown },
+        payment: { amountIDR: fees.totalIDR, snapToken: snap.token, redirectUrl: snap.redirectUrl },
       });
     },
   });
@@ -425,6 +553,28 @@ orders.post("/quick", async c => {
     handler: async () => {
       // Concierge model: fees exclude the item price (paid directly on marketplace).
       const fees = computeFees({ courierFeeIDR: input.courier.priceIDR });
+      const breakdown = buildOrderCheckoutBreakdown({
+        itemSubtotalIDR: input.item.itemPriceIDR,
+        deliveryFeeIDR: input.courier.priceIDR,
+      });
+      const snapshotPayload = buildOrderSnapshotPayload({
+        selectedListing: {
+          source: input.item.source,
+          title: input.item.title,
+          externalUrl: input.item.externalUrl,
+          imageUrl: input.item.imageUrl,
+          sellerName: input.item.merchantName,
+          pickupAddress: input.pickup.address,
+          itemSubtotalIDR: input.item.itemPriceIDR,
+        },
+        breakdown,
+        courierPreference: {
+          provider: input.courier.provider,
+          tier: input.courier.tier,
+          useLinkedAccount: input.courier.useLinkedAccount,
+          linkedAccountRef: input.courier.linkedAccountRef,
+        },
+      });
 
       // All five table inserts (item_requests → addresses → quotes →
       // courier_rates → orders + order_events) run inside a single Postgres
@@ -480,6 +630,7 @@ orders.post("/quick", async c => {
         recipientPhone: input.recipient.phone,
         pickupAddress: input.pickup.address,
       });
+      await persistOrderSnapshotPayload(rpcRow.order_id, snapshotPayload);
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -525,9 +676,9 @@ orders.post("/quick", async c => {
           id: rpcRow.order_id,
           shortCode: rpcRow.order_short_code,
           totalIDR: fees.totalIDR,
-          breakdown: fees,
+          breakdown,
         },
-        payment: { snapToken: snap.token, redirectUrl: snap.redirectUrl },
+        payment: { amountIDR: fees.totalIDR, snapToken: snap.token, redirectUrl: snap.redirectUrl },
       });
     },
   });
@@ -556,6 +707,27 @@ orders.post("/concierge", async c => {
     requestBody,
     handler: async () => {
       const fees = computeFees({ courierFeeIDR: input.courier.priceIDR });
+      const breakdown = buildOrderCheckoutBreakdown({
+        itemSubtotalIDR: input.product.priceIDRDeclared,
+        deliveryFeeIDR: input.courier.priceIDR,
+      });
+      const snapshotPayload = buildOrderSnapshotPayload({
+        selectedListing: {
+          source: input.product.source,
+          title: input.product.title,
+          externalUrl: input.product.sourceUrl,
+          imageUrl: input.product.thumbnailUrl,
+          pickupAddress: input.pickup.address,
+          itemSubtotalIDR: input.product.priceIDRDeclared,
+        },
+        breakdown,
+        courierPreference: {
+          provider: input.courier.provider,
+          tier: input.courier.tier,
+          useLinkedAccount: input.courier.useLinkedAccount,
+          linkedAccountRef: input.courier.linkedAccountRef,
+        },
+      });
 
       const { data: rpcRow, error: rpcErr } = await supabase
         .rpc("create_order_quick", {
@@ -623,7 +795,10 @@ orders.post("/concierge", async c => {
         product_thumbnail_url: input.product.thumbnailUrl ?? null,
         item_declared_value_idr: input.product.priceIDRDeclared,
       };
-      await supabase.from("orders").update(meta as never).eq("id", rpcRow.order_id);
+      await supabase
+        .from("orders")
+        .update({ ...(meta as Record<string, unknown>), ...snapshotPayload } as never)
+        .eq("id", rpcRow.order_id);
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -670,9 +845,9 @@ orders.post("/concierge", async c => {
           shortCode: rpcRow.order_short_code,
           status: "pending_payment" as const,
           totalIDR: fees.totalIDR,
-          breakdown: fees,
+          breakdown,
         },
-        payment: { snapToken: snap.token, redirectUrl: snap.redirectUrl },
+        payment: { amountIDR: fees.totalIDR, snapToken: snap.token, redirectUrl: snap.redirectUrl },
       });
     },
   });
@@ -690,6 +865,9 @@ orders.get("/", async c => {
     .select(`
       id, short_code, status, total_idr, item_price_idr, service_fee_idr,
       courier_fee_idr, tax_idr, created_at,
+      selected_listing_snapshot, checkout_fee_snapshot, courier_preference_snapshot,
+      booking_retry_state, booking_retry_attempt_count, booking_retry_max_attempts,
+      booking_retry_last_error, booking_retry_next_retry_at, booking_retry_updated_at,
       quote:quote_id(title, image_url, pickup_address, external_url, source),
       delivery:deliveries(provider, tier, status, tracking_url, is_active),
       address:delivery_address_id(line1, city, recipient_name, recipient_phone)
@@ -712,6 +890,14 @@ orders.get("/", async c => {
             recipient_phone: decryptPII(o.address.recipient_phone) ?? o.address.recipient_phone,
           }
         : o.address,
+      fulfillment_retry: {
+        state: o.booking_retry_state,
+        attemptCount: o.booking_retry_attempt_count,
+        maxAttempts: o.booking_retry_max_attempts,
+        lastError: o.booking_retry_last_error,
+        nextRetryAt: o.booking_retry_next_retry_at,
+        updatedAt: o.booking_retry_updated_at,
+      },
     })),
   });
 });

@@ -58,7 +58,9 @@ GoGet/
 GoGet never touches the user's purchase: no carts, no checkout proxying, no
 item-resale payment. The API is the only place that talks to courier and
 payment providers. The clients only talk to Supabase (for owned data via RLS)
-and to the API.
+and to the API. Order creation routes are idempotent (`Idempotency-Key`) and
+persist listing/checkout/courier snapshots plus booking retry visibility fields
+for read models.
 
 ## Order lifecycle
 
@@ -84,17 +86,19 @@ and to the API.
                   │  Midtrans webhook → "paid"
                   ▼
                 paid
-                  │  API books courier (GoSend or Grab)
+                  │  enqueue booking job
                   ▼
-        awaiting_pickup
+      booking retries (pending/processing/retrying)
+                  │  success → courier booked
+                  ▼
+            awaiting_pickup
                   │  courier webhooks
                   ▼
   runner_assigned → item_picked_up
                   → in_transit
                   → delivered
 ```
-
-Failures route to `failed` / `refunded`. Canceled before payment → `canceled`.
+Failures route to `failed` / `refunded` (including retry exhaustion). Canceled before payment → `canceled`.
 The old `item_purchased` enum value is kept for backwards-compat but new
 rows use `item_picked_up`.
 
@@ -133,6 +137,9 @@ Point provider webhooks at:
 - GoSend:   `POST https://<API_PUBLIC_URL>/webhooks/gosend`
 - Grab:     `POST https://<API_PUBLIC_URL>/webhooks/grab`
 
+Internal retry processor endpoint:
+- `POST https://<API_PUBLIC_URL>/webhooks/order-jobs/process` with `Authorization: Bearer <ORDER_JOBS_PROCESS_TOKEN>` (or `x-order-jobs-token`)
+
 For local dev use [ngrok](https://ngrok.com) to expose port 4000.
 
 ## What's wired up vs. placeholder
@@ -143,10 +150,14 @@ For local dev use [ngrok](https://ngrok.com) to expose port 4000.
 - GoSend adapter (calculate + book + cancel + webhook parse)
 - Grab adapter (OAuth + quote + book + cancel + webhook parse)
 - Rate comparison with price/speed bias
+- Search intake supports either product URL or keyword, with 35km filtering by coordinates and zipcode geocode fallback
 - Tokopedia / Shopee / Bukalapak search adapters (URL/title/price/image only — no cart logic)
   with per-host rate limiting, retries, Zod validation, and tolerant per-item parsing
 - Midtrans Snap + signature-verified webhook (idempotent)
 - Concierge order state machine + idempotent webhook log
+- Idempotent order creation (`POST /api/orders*`) with replay-safe response caching
+- Order snapshots persisted on create (`selected_listing_snapshot`, `checkout_fee_snapshot`, `courier_preference_snapshot`)
+- Courier booking retry job processing with user-visible retry status in order and tracking read models
 - In-app WebView handoff (web: `window.open` new tab; mobile: `expo-web-browser`)
 - Phone OTP sign-in (web + mobile via Supabase)
 - Address picker with map (Leaflet + Nominatim, server-side proxy at `/api/geocode`)

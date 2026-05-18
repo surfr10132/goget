@@ -3,6 +3,7 @@ import { bookCourierForOrder } from "../routes/orders";
 import { transitionOrderStatus } from "./order-state-machine";
 
 const BOOK_COURIER_JOB_TYPE = "book_courier" as const;
+const BOOK_COURIER_MAX_ATTEMPTS = 6;
 const MAX_INLINE_JOB_LIMIT = 50;
 
 type OrderJobType = typeof BOOK_COURIER_JOB_TYPE;
@@ -27,15 +28,24 @@ export async function enqueueBookCourierJob(
   orderId: string,
   payload: Record<string, unknown> = {},
 ): Promise<void> {
+  const nowIso = new Date().toISOString();
   const { error } = await supabase.rpc("enqueue_order_job", {
     p_order_id: orderId,
     p_job_type: BOOK_COURIER_JOB_TYPE,
     p_dedupe_key: `${BOOK_COURIER_JOB_TYPE}:${orderId}`,
     p_payload: payload,
-    p_max_attempts: 6,
-    p_run_at: new Date().toISOString(),
+    p_max_attempts: BOOK_COURIER_MAX_ATTEMPTS,
+    p_run_at: nowIso,
   });
   if (error) throw new Error(error.message);
+  await updateOrderRetrySnapshot({
+    orderId,
+    state: "pending",
+    attemptCount: 0,
+    maxAttempts: BOOK_COURIER_MAX_ATTEMPTS,
+    lastError: null,
+    nextRetryAt: nowIso,
+  });
 }
 
 export async function processOrderJobs(limit = 10): Promise<ProcessOrderJobsResult> {
@@ -53,6 +63,14 @@ export async function processOrderJobs(limit = 10): Promise<ProcessOrderJobsResu
   let failed = 0;
 
   for (const job of jobs) {
+    await updateOrderRetrySnapshot({
+      orderId: job.order_id,
+      state: "processing",
+      attemptCount: job.attempt_count,
+      maxAttempts: job.max_attempts,
+      lastError: null,
+      nextRetryAt: null,
+    });
     try {
       await runJob(job);
       await markJobSucceeded(job);
@@ -111,11 +129,12 @@ async function runJob(job: ClaimedOrderJob): Promise<void> {
 }
 
 async function markJobSucceeded(job: ClaimedOrderJob): Promise<void> {
+  const nextAttempt = job.attempt_count + 1;
   const { error } = await supabase
     .from("order_jobs")
     .update({
       status: "succeeded",
-      attempt_count: job.attempt_count + 1,
+      attempt_count: nextAttempt,
       locked_at: null,
       last_error: null,
       completed_at: new Date().toISOString(),
@@ -123,6 +142,14 @@ async function markJobSucceeded(job: ClaimedOrderJob): Promise<void> {
     .eq("id", job.id)
     .eq("status", "processing");
   if (error) throw new Error(error.message);
+  await updateOrderRetrySnapshot({
+    orderId: job.order_id,
+    state: "succeeded",
+    attemptCount: nextAttempt,
+    maxAttempts: job.max_attempts,
+    lastError: null,
+    nextRetryAt: null,
+  });
 }
 
 async function markJobFailure(job: ClaimedOrderJob, message: string): Promise<boolean> {
@@ -142,6 +169,14 @@ async function markJobFailure(job: ClaimedOrderJob, message: string): Promise<bo
       .eq("id", job.id)
       .eq("status", "processing");
     if (error) throw new Error(error.message);
+    await updateOrderRetrySnapshot({
+      orderId: job.order_id,
+      state: "failed",
+      attemptCount: nextAttempt,
+      maxAttempts: job.max_attempts,
+      lastError: message,
+      nextRetryAt: null,
+    });
     return true;
   }
 
@@ -158,6 +193,14 @@ async function markJobFailure(job: ClaimedOrderJob, message: string): Promise<bo
     .eq("id", job.id)
     .eq("status", "processing");
   if (error) throw new Error(error.message);
+  await updateOrderRetrySnapshot({
+    orderId: job.order_id,
+    state: "retrying",
+    attemptCount: nextAttempt,
+    maxAttempts: job.max_attempts,
+    lastError: message,
+    nextRetryAt: retryAt,
+  });
   return false;
 }
 
@@ -181,4 +224,32 @@ async function readJson(response: Response): Promise<unknown> {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+async function updateOrderRetrySnapshot(input: {
+  orderId: string;
+  state: "pending" | "processing" | "retrying" | "succeeded" | "failed";
+  attemptCount: number;
+  maxAttempts: number;
+  lastError: string | null;
+  nextRetryAt: string | null;
+}): Promise<void> {
+  const { error } = await supabase
+    .from("orders")
+    .update({
+      booking_retry_state: input.state,
+      booking_retry_attempt_count: input.attemptCount,
+      booking_retry_max_attempts: input.maxAttempts,
+      booking_retry_last_error: input.lastError,
+      booking_retry_next_retry_at: input.nextRetryAt,
+      booking_retry_updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.orderId);
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.warn("failed to update order retry snapshot", {
+      orderId: input.orderId,
+      error: error.message,
+    });
+  }
 }

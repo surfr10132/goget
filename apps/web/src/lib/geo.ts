@@ -1,4 +1,5 @@
 export interface LatLng { lat: number; lng: number }
+interface NominatimSearchRow { lat: string; lon: string }
 
 /** Haversine distance in km between two points. */
 export function distanceKm(a: LatLng, b: LatLng): number {
@@ -54,7 +55,7 @@ export async function postalCodeToLatLng(code: string): Promise<LatLng> {
     headers: { "Accept-Language": "id,en", "User-Agent": "GoGet-App/1.0" },
   });
   if (!r.ok) throw new Error(`Nominatim ${r.status}`);
-  const data: any[] = await r.json();
+  const data = await r.json() as NominatimSearchRow[];
   if (!data.length) throw new Error(`Postal code "${code}" not found in Indonesia`);
   return { lat: Number(data[0].lat), lng: Number(data[0].lon) };
 }

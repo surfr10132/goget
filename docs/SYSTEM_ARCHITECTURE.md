@@ -64,12 +64,16 @@ State updates are event-backed through `order_events`.
 - `payments`
 - `deliveries`
 - `webhook_events`
+- `order_jobs`
+- `idempotency_keys`
 
 Important design points:
 
 - `orders.selected_rate_id` stores chosen courier rate explicitly.
+- `orders` stores create-time snapshots (`selected_listing_snapshot`, `checkout_fee_snapshot`, `courier_preference_snapshot`) and retry visibility fields (`booking_retry_*`).
 - `payments` uses unique `(provider, provider_order_id)` and per-order `attempt` strategy.
 - `webhook_events` deduplicates by `(provider, external_id)`.
+- `idempotency_keys` enforces replay-safe order creation semantics across `POST /api/orders*`.
 - PostGIS geography fields are used for pickup/dropoff coordinates.
 
 ## Pricing model
@@ -92,8 +96,10 @@ Item price remains recorded for reporting and ops context, but user pays item se
 ## Reliability strategies
 
 - Idempotent webhook log before state mutation.
+- Idempotent order creation via `Idempotency-Key` + persisted response replay.
 - Payment row inserted before Midtrans session creation to avoid orphan settlement callbacks.
 - Booking is deferred until payment settlement.
+- Courier booking retries are processed via `order_jobs` with bounded attempts/backoff and order-level retry snapshots.
 - Event history is append-only for audit and debugging.
 
 ## External integrations
@@ -108,6 +114,7 @@ Item price remains recorded for reporting and ops context, but user pays item se
 - Local dev via `pnpm dev` (Turbo orchestration).
 - API and client URLs set via environment variables.
 - Provider credentials are optional in dev; endpoints degrade gracefully when unavailable.
+- Internal retry processing endpoint (`POST /webhooks/order-jobs/process`) is guarded by `ORDER_JOBS_PROCESS_TOKEN`.
 
 ## Known constraints
 

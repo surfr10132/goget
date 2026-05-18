@@ -23,7 +23,6 @@ interface SourcedItem {
   distanceKm?: number;
 }
 
-const TEST_ENDPOINT = "/api/sourcing/test";
 const MAX_KM = 35;
 
 // ── Refinement questions ───────────────────────────────────────────────────
@@ -130,13 +129,13 @@ function SearchInner() {
   const params = useSearchParams();
   const router = useRouter();
   const q = params.get("q") ?? "";
+  const referenceUrl = params.get("referenceUrl") ?? "";
 
   const [step, setStep] = useState<"refine" | "locate" | "results">("refine");
   const [refinements, setRefinements] = useState<Record<string, string>>({});
   const [location, setLocation] = useState<{ loc: LatLng; label: string } | null>(null);
   const [items, setItems] = useState<SourcedItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [nearbyLoading, setNearbyLoading] = useState(false);
   const [webLoading, setWebLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,7 +159,6 @@ function SearchInner() {
   async function runSearch(near: LatLng) {
     setStep("results");
     setLoading(true);
-    setNearbyLoading(true);
     setWebLoading(true);
     setError(null);
     setItems([]);
@@ -168,40 +166,25 @@ function SearchInner() {
     const context = refinementContext();
     const cityLabel = location?.label ?? "";
 
-    // 1. AI directory — Claude Haiku generates realistic listings for any query in any city
-    fetch(TEST_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // Send query and context separately so the API uses q for titles
-      // and context only to guide which variant/grade/size to find.
-      body: JSON.stringify({ query: q, context, near, city: cityLabel, limit: 6 }),
-    })
-      .then(r => r.json())
-      .then(data => setItems(prev => mergeItems(prev, data.items ?? [])))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-
-    // 2. OSM nearby — real stores from OpenStreetMap (free, no key needed)
-    fetch("/api/sourcing/nearby", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: q, near, maxDistanceKm: MAX_KM }),
-    })
-      .then(r => r.json())
-      .then(data => setItems(prev => mergeItems(prev, data.items ?? [])))
-      .catch(() => {})
-      .finally(() => setNearbyLoading(false));
-
-    // 3. AI web search — best results, needs Anthropic credits
+    // Strict image policy: only return results with source-site-derived images.
     fetch("/api/sourcing/web", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: q, context, near, city: cityLabel }),
+      body: JSON.stringify({
+        query: q,
+        referenceUrl: referenceUrl || undefined,
+        context,
+        near,
+        city: cityLabel,
+      }),
     })
       .then(r => r.json())
       .then(data => setItems(prev => mergeItems(prev, data.items ?? [])))
-      .catch(() => {})
-      .finally(() => setWebLoading(false));
+      .catch(() => setError("Could not fetch source-site results right now. Please retry."))
+      .finally(() => {
+        setWebLoading(false);
+        setLoading(false);
+      });
   }
 
   function mergeItems(existing: SourcedItem[], incoming: SourcedItem[]): SourcedItem[] {
@@ -256,10 +239,10 @@ function SearchInner() {
       {loading && <SkeletonGrid />}
 
       {/* In-progress banners */}
-      {!loading && (nearbyLoading || webLoading) && step === "results" && (
+      {!loading && webLoading && step === "results" && (
         <div className="flex items-center gap-2 text-sm text-gray-500 animate-pulse">
           <span className="inline-block w-3 h-3 rounded-full bg-brand-400 animate-ping" />
-          {nearbyLoading ? "Finding nearby stores…" : "Searching the web for more…"}
+          Searching source sites…
         </div>
       )}
 
@@ -277,7 +260,7 @@ function SearchInner() {
       )}
 
       {/* No results */}
-      {!loading && !nearbyLoading && !webLoading && !error && step === "results" && items.length === 0 && (
+      {!loading && !webLoading && !error && step === "results" && items.length === 0 && (
         <div className="rounded-2xl border border-dashed border-gray-200 p-10 text-center space-y-2">
           <p className="font-medium">No stores found within {MAX_KM}&nbsp;km</p>
           <p className="text-sm text-gray-500">Try a different search term, or change your location.</p>
@@ -289,7 +272,7 @@ function SearchInner() {
         <>
           <p className="text-sm text-gray-500">
             {items.length} result{items.length !== 1 ? "s" : ""} found within {MAX_KM}&nbsp;km
-            {(nearbyLoading || webLoading) && (
+            {webLoading && (
               <span className="ml-2 text-brand-500 animate-pulse">· finding more…</span>
             )}
           </p>

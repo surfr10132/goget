@@ -70,11 +70,24 @@ export function SearchBox() {
     setExtractedFrom(null);
   }
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
+  function runSubmit() {
     if (isEmpty) return;
     setBusy(true);
-    router.push(`/search?${new URLSearchParams({ q: value.trim() }).toString()}`);
+    const raw = value.trim();
+    const params = new URLSearchParams({ q: raw });
+    const directUrl = looksLikeUrl(raw) ? raw : null;
+    const referenceUrl = extractedFrom ?? directUrl;
+    if (referenceUrl) {
+      params.set("referenceUrl", referenceUrl);
+      const inferred = extractProductFromUrl(referenceUrl);
+      if (inferred) params.set("q", inferred);
+    }
+    router.push(`/search?${params.toString()}`);
+  }
+
+  function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    runSubmit();
   }
 
   return (
@@ -86,7 +99,10 @@ export function SearchBox() {
           value={value}
           onChange={e => handleChange(e.target.value)}
           onKeyDown={e => {
-            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(e as any); }
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              runSubmit();
+            }
           }}
           placeholder={
             "What are you looking for?\n" +

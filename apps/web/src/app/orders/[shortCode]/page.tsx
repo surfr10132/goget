@@ -19,6 +19,7 @@ type OrderStatus =
   | "refunded"
   | "failed"
   | "canceled";
+type FulfillmentRetryState = "idle" | "pending" | "processing" | "retrying" | "succeeded" | "failed";
 
 interface TrackingResponse {
   short_code: string;
@@ -42,6 +43,14 @@ interface TrackingResponse {
     is_active: boolean;
   }[] | null;
   events: { status: OrderStatus; note?: string | null; created_at: string }[] | null;
+  fulfillment_retry?: {
+    state: FulfillmentRetryState;
+    attemptCount: number;
+    maxAttempts: number;
+    lastError: string | null;
+    nextRetryAt: string | null;
+    updatedAt: string;
+  } | null;
 }
 
 const STEPS: { status: OrderStatus; label: string; icon: string }[] = [
@@ -66,6 +75,11 @@ const ORDER_INDEX: Partial<Record<OrderStatus, number>> = {
 
 const TERMINAL: readonly OrderStatus[] = ["delivered", "refunded", "failed", "canceled"];
 
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  return "Request failed";
+}
+
 export default function OrderDetailPage() {
   const router = useRouter();
   const { shortCode } = useParams<{ shortCode: string }>();
@@ -78,8 +92,8 @@ export default function OrderDetailPage() {
       const data = await api<TrackingResponse>(`/api/tracking/${shortCode}`);
       setOrder(data);
       setError(null);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (error: unknown) {
+      setError(toErrorMessage(error));
     }
   }, [shortCode]);
 
@@ -131,6 +145,11 @@ export default function OrderDetailPage() {
   const isCancelled = order.status === "canceled" || order.status === "failed";
   const isPendingPayment = order.status === "pending_payment";
   const activeDelivery = order.delivery?.find(d => d.is_active) ?? order.delivery?.[0] ?? null;
+  const retry = order.fulfillment_retry;
+  const retryState = retry?.state;
+  const retryInProgress =
+    retryState === "pending" || retryState === "processing" || retryState === "retrying";
+  const retryFailed = retryState === "failed";
 
   return (
     <div className="max-w-lg mx-auto space-y-5">
@@ -182,6 +201,26 @@ export default function OrderDetailPage() {
       {isPendingPayment && (
         <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-5 text-yellow-800 text-sm">
           Payment is pending. If your Midtrans window was closed, refresh after completing payment.
+        </div>
+      )}
+      {retryInProgress && retry && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-800 text-sm space-y-1">
+          <p className="font-medium">Courier booking retry in progress</p>
+          <p>
+            Attempt {retry.attemptCount} / {Math.max(retry.maxAttempts, retry.attemptCount)}
+            {retry.nextRetryAt ? ` · next retry ${new Date(retry.nextRetryAt).toLocaleString("id-ID")}` : ""}
+          </p>
+          {retry.lastError && <p>Last error: {retry.lastError}</p>}
+        </div>
+      )}
+      {retryFailed && retry && !isCancelled && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-red-700 text-sm space-y-1">
+          <p className="font-medium">Courier booking retries exhausted</p>
+          <p>
+            Attempts: {retry.attemptCount}
+            {retry.maxAttempts ? ` / ${retry.maxAttempts}` : ""}
+          </p>
+          {retry.lastError && <p>Last error: {retry.lastError}</p>}
         </div>
       )}
 
