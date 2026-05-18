@@ -6,7 +6,6 @@ import Image from "next/image";
 import { LocationPicker } from "@/components/LocationPicker";
 import { formatDistance, distanceKm, type LatLng } from "@/lib/geo";
 import { formatIDR } from "@goget/shared";
-import type { RefinementQuestion } from "@/app/api/search/refine/route";
 
 interface SourcedItem {
   source: string;
@@ -22,106 +21,10 @@ interface SourcedItem {
   pickupGeo?: { lat: number; lng: number } | null;
   distanceKm?: number;
 }
+const MAX_RADIUS_MILES = 35;
+const MAX_DISTANCE_KM = Number((MAX_RADIUS_MILES * 1.60934).toFixed(2));
+const MAX_RADIUS_LABEL = `${MAX_RADIUS_MILES} miles (${Math.round(MAX_DISTANCE_KM)} km)`;
 
-const MAX_KM = 35;
-
-// ── Refinement questions ───────────────────────────────────────────────────
-
-function RefinementStep({
-  q,
-  onDone,
-}: {
-  q: string;
-  onDone: (answers: Record<string, string>) => void;
-}) {
-  const [questions, setQuestions] = useState<RefinementQuestion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    fetch("/api/search/refine", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: q }),
-    })
-      .then(r => r.json())
-      .then(data => setQuestions(data.questions ?? []))
-      .catch(() => setQuestions([]))
-      .finally(() => setLoading(false));
-  }, [q]);
-
-  const allAnswered = questions.length > 0 && questions.every(qn => answers[qn.id]);
-
-  function pick(id: string, option: string) {
-    setAnswers(prev => ({ ...prev, [id]: option }));
-  }
-
-  return (
-    <div className="max-w-xl mx-auto space-y-6">
-      <div>
-        <p className="text-sm text-gray-500 mb-1">A few quick questions to narrow things down</p>
-        <h2 className="text-xl font-semibold">Tell us a bit more</h2>
-      </div>
-
-      {loading ? (
-        <div className="space-y-5">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="space-y-2 animate-pulse">
-              <div className="h-4 bg-gray-100 rounded w-2/5" />
-              <div className="flex gap-2">
-                {[1, 2, 3].map(j => <div key={j} className="h-9 bg-gray-100 rounded-xl w-24" />)}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        questions.map((qn, i) => (
-          <div key={qn.id} className="space-y-2">
-            <p className="font-medium text-sm">
-              <span className="text-brand-500 mr-1.5">{i + 1}.</span>{qn.text}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {qn.options.map(opt => {
-                const selected = answers[qn.id] === opt;
-                return (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => pick(qn.id, opt)}
-                    className={`px-4 py-2 rounded-xl border text-sm font-medium transition ${
-                      selected
-                        ? "bg-brand-500 border-brand-500 text-white"
-                        : "bg-white border-gray-200 text-gray-700 hover:border-brand-400"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))
-      )}
-
-      <div className="flex gap-3 pt-2">
-        <button
-          disabled={loading || !allAnswered}
-          onClick={() => onDone(answers)}
-          className="flex-1 py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold disabled:opacity-40 transition"
-        >
-          Find it near me →
-        </button>
-        <button
-          type="button"
-          onClick={() => onDone({})}
-          className="px-5 py-3 rounded-xl border border-gray-200 text-sm text-gray-500 hover:text-gray-800 transition"
-        >
-          Skip
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // ── Main search inner ──────────────────────────────────────────────────────
 
@@ -131,24 +34,12 @@ function SearchInner() {
   const q = params.get("q") ?? "";
   const referenceUrl = params.get("referenceUrl") ?? "";
 
-  const [step, setStep] = useState<"refine" | "locate" | "results">("refine");
-  const [refinements, setRefinements] = useState<Record<string, string>>({});
+  const [step, setStep] = useState<"locate" | "results">("locate");
   const [location, setLocation] = useState<{ loc: LatLng; label: string } | null>(null);
   const [items, setItems] = useState<SourcedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [webLoading, setWebLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  function handleRefineDone(answers: Record<string, string>) {
-    setRefinements(answers);
-    setStep("locate");
-  }
-
-  // Build a short context string from refinement answers (used to guide search,
-  // kept separate from the base query so titles stay clean).
-  function refinementContext() {
-    return Object.values(refinements).filter(Boolean).join(", ");
-  }
 
   useEffect(() => {
     if (!location) return;
@@ -163,28 +54,53 @@ function SearchInner() {
     setError(null);
     setItems([]);
 
-    const context = refinementContext();
     const cityLabel = location?.label ?? "";
+    const payload = {
+      query: q,
+      referenceUrl: referenceUrl || undefined,
+      near,
+      maxDistanceKm: MAX_DISTANCE_KM,
+      city: cityLabel,
+    };
 
-    // Strict image policy: only return results with source-site-derived images.
-    fetch("/api/sourcing/web", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: q,
-        referenceUrl: referenceUrl || undefined,
-        context,
-        near,
-        city: cityLabel,
-      }),
-    })
-      .then(r => r.json())
-      .then(data => setItems(prev => mergeItems(prev, data.items ?? [])))
-      .catch(() => setError("Could not fetch source-site results right now. Please retry."))
+    const requests = [
+      fetch("/api/sourcing/nearby", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then(r => r.json())
+        .then(data => setItems(prev => mergeItems(prev, data.items ?? []))),
+      fetch("/api/sourcing/web", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data?.error && data.error !== "no_api_key") {
+            setError("Could not fetch website results right now. Please retry.");
+          }
+          setItems(prev => mergeItems(prev, data.items ?? []));
+        }),
+    ];
+
+    Promise.allSettled(requests)
+      .then((results) => {
+        if (results.every((r) => r.status === "rejected")) {
+          setError("Could not fetch local store results right now. Please retry.");
+        }
+      })
       .finally(() => {
         setWebLoading(false);
         setLoading(false);
       });
+  }
+
+  function getSourcePreviewUrl(item: SourcedItem): string | undefined {
+    if (item.imageUrl) return item.imageUrl;
+    if (!item.externalUrl) return undefined;
+    return `https://s.wordpress.com/mshots/v1/${encodeURIComponent(item.externalUrl)}?w=800`;
   }
 
   function mergeItems(existing: SourcedItem[], incoming: SourcedItem[]): SourcedItem[] {
@@ -212,9 +128,9 @@ function SearchInner() {
           <h1 className="text-2xl font-semibold">&ldquo;{q}&rdquo;</h1>
           {location && step === "results" && (
             <p className="text-sm text-gray-500 mt-0.5">
-              Showing stores within {MAX_KM}&nbsp;km of <span className="font-medium">{location.label}</span>
+              Showing stores within {MAX_RADIUS_LABEL} of <span className="font-medium">{location.label}</span>
               {" "}·{" "}
-              <button className="text-brand-600 underline" onClick={() => { setLocation(null); setItems([]); setStep("refine"); }}>
+              <button className="text-brand-600 underline" onClick={() => { setLocation(null); setItems([]); setStep("locate"); }}>
                 start over
               </button>
             </p>
@@ -225,10 +141,6 @@ function SearchInner() {
         </button>
       </div>
 
-      {/* Step: Refine */}
-      {step === "refine" && (
-        <RefinementStep q={q} onDone={handleRefineDone} />
-      )}
 
       {/* Step: Location picker */}
       {step === "locate" && (
@@ -242,7 +154,7 @@ function SearchInner() {
       {!loading && webLoading && step === "results" && (
         <div className="flex items-center gap-2 text-sm text-gray-500 animate-pulse">
           <span className="inline-block w-3 h-3 rounded-full bg-brand-400 animate-ping" />
-          Searching source sites…
+          Searching local stores and websites…
         </div>
       )}
 
@@ -262,7 +174,7 @@ function SearchInner() {
       {/* No results */}
       {!loading && !webLoading && !error && step === "results" && items.length === 0 && (
         <div className="rounded-2xl border border-dashed border-gray-200 p-10 text-center space-y-2">
-          <p className="font-medium">No stores found within {MAX_KM}&nbsp;km</p>
+          <p className="font-medium">No stores found within {MAX_RADIUS_LABEL}</p>
           <p className="text-sm text-gray-500">Try a different search term, or change your location.</p>
         </div>
       )}
@@ -271,7 +183,7 @@ function SearchInner() {
       {items.length > 0 && (
         <>
           <p className="text-sm text-gray-500">
-            {items.length} result{items.length !== 1 ? "s" : ""} found within {MAX_KM}&nbsp;km
+            {items.length} result{items.length !== 1 ? "s" : ""} found within {MAX_RADIUS_LABEL}
             {webLoading && (
               <span className="ml-2 text-brand-500 animate-pulse">· finding more…</span>
             )}
@@ -281,22 +193,46 @@ function SearchInner() {
               const dist = it.distanceKm ?? (
                 it.pickupGeo && location ? distanceKm(location.loc, it.pickupGeo) : null
               );
+              const previewImageUrl = getSourcePreviewUrl(it);
               return (
                 <li
                   key={`${it.source}-${i}`}
                   className="rounded-2xl border border-gray-100 hover:border-brand-400 transition overflow-hidden flex flex-col"
                 >
                   <div className="relative aspect-square bg-gray-50">
-                    {it.imageUrl ? (
-                      <Image
-                        src={it.imageUrl}
-                        alt={it.title}
-                        fill
-                        priority={i < 3}
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, 33vw"
-                        unoptimized
-                      />
+                    {previewImageUrl ? (
+                      it.externalUrl ? (
+                        <a
+                          href={it.externalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute inset-0 block group"
+                          aria-label={`Open ${it.title} on source site`}
+                        >
+                          <Image
+                            src={previewImageUrl}
+                            alt={it.title}
+                            fill
+                            priority={i < 3}
+                            className="object-cover group-hover:scale-[1.02] transition-transform"
+                            sizes="(max-width: 640px) 100vw, 33vw"
+                            unoptimized
+                          />
+                          <span className="absolute left-2 bottom-2 text-[11px] font-semibold text-white bg-black/55 px-2 py-1 rounded-full">
+                            View source listing
+                          </span>
+                        </a>
+                      ) : (
+                        <Image
+                          src={previewImageUrl}
+                          alt={it.title}
+                          fill
+                          priority={i < 3}
+                          className="object-cover"
+                          sizes="(max-width: 640px) 100vw, 33vw"
+                          unoptimized
+                        />
+                      )
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-4xl">📦</div>
                     )}
@@ -351,7 +287,7 @@ function SearchInner() {
                     )}
                     {(() => {
                       const marketplaceSource =
-                        it.source === "tokopedia" || it.source === "shopee" || it.source === "bukalapak" || it.source === "web";
+                        it.source === "tokopedia" || it.source === "shopee" || it.source === "bukalapak";
                       const sourceLabel =
                         it.source === "tokopedia" ? "Tokopedia"
                         : it.source === "shopee"  ? "Shopee"

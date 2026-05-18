@@ -35,6 +35,10 @@ const GeocodeQuerySchema = z.union([
     q: z.string().optional().default(""),
   }),
   z.object({
+    mode: z.literal("postal"),
+    code: z.string().trim().regex(/^\d{5}$/),
+  }),
+  z.object({
     mode: z.literal("reverse"),
     lat: z.coerce.number().finite(),
     lng: z.coerce.number().finite(),
@@ -127,6 +131,35 @@ export async function GET(req: NextRequest) {
       }));
       cacheSet(key, results);
       return NextResponse.json({ results });
+    }
+
+    if (query.mode === "postal") {
+      const code = query.code.trim();
+      const key = `p:${code}`;
+      const cached = cacheGet<{ lat: number; lng: number; label: string }>(key);
+      if (cached) return NextResponse.json(cached);
+
+      const data = (await throttled(() =>
+        nominatim("search", {
+          postalcode: code,
+          country: "Indonesia",
+          limit: "1",
+          addressdetails: "1",
+        }),
+      )) as NominatimSearchResult[];
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return NextResponse.json({ error: `Postal code "${code}" not found in Indonesia` }, { status: 404 });
+      }
+
+      const hit = data[0];
+      const result = {
+        lat: Number(hit.lat),
+        lng: Number(hit.lon),
+        label: hit.display_name ?? `Kode pos ${code}`,
+      };
+      cacheSet(key, result);
+      return NextResponse.json(result);
     }
 
     if (query.mode === "reverse") {

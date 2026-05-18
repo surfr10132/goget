@@ -24,6 +24,7 @@ export function OrderConfirmation({ initial, onConfirm }: Props) {
   const [declared, setDeclared] = useState<string>(
     initial.priceIDRDisplay ? String(initial.priceIDRDisplay) : "",
   );
+  const [confirmedMerchantPayment, setConfirmedMerchantPayment] = useState(false);
   const [touched, setTouched] = useState(false);
 
   const declaredNum = parseInt(declared.replace(/\D/g, ""), 10);
@@ -31,7 +32,7 @@ export function OrderConfirmation({ initial, onConfirm }: Props) {
 
   function submit() {
     setTouched(true);
-    if (!declaredValid) return;
+    if (!declaredValid || !confirmedMerchantPayment) return;
     onConfirm({
       source: initial.source,
       sourceUrl: initial.sourceUrl,
@@ -46,7 +47,7 @@ export function OrderConfirmation({ initial, onConfirm }: Props) {
     <div className="space-y-4">
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">
-          Marketplace order/invoice number <span className="text-gray-400">(optional)</span>
+          Merchant order/invoice number <span className="text-gray-400">(optional)</span>
         </label>
         <input
           value={orderRef}
@@ -78,13 +79,26 @@ export function OrderConfirmation({ initial, onConfirm }: Props) {
           Used for delivery insurance and to match the receipt at pickup.
         </p>
         {touched && !declaredValid && (
-          <p className="text-xs text-red-600 mt-1">Enter the amount you paid the seller.</p>
+          <p className="text-xs text-red-600 mt-1">Enter the amount you paid the local merchant.</p>
         )}
       </div>
+      <label className="flex items-start gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-700">
+        <input
+          type="checkbox"
+          checked={confirmedMerchantPayment}
+          onChange={e => setConfirmedMerchantPayment(e.target.checked)}
+          className="mt-0.5 accent-brand-500"
+        />
+        <span>I confirm I already paid the local merchant directly.</span>
+      </label>
+      {touched && !confirmedMerchantPayment && (
+        <p className="text-xs text-red-600 -mt-2">Please confirm merchant payment before continuing.</p>
+      )}
 
       <button
+        disabled={!declaredValid || !confirmedMerchantPayment}
         onClick={submit}
-        className="w-full py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold"
+        className="w-full py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold disabled:opacity-50"
       >
         Continue to pickup &amp; delivery
       </button>

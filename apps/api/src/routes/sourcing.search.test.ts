@@ -49,6 +49,7 @@ function createApp() {
   app.route("/api/sourcing", sourcing);
   return app;
 }
+const MAX_SEARCH_DISTANCE_KM = Number((35 * 1.60934).toFixed(2));
 
 describe("sourcing route input modes", () => {
   beforeEach(() => {
@@ -81,7 +82,7 @@ describe("sourcing route input modes", () => {
         referenceUrl: "https://shop.example.com/product/super-mixer-3000.html",
         location: {
           near: { lat: -6.2088, lng: 106.8456 },
-          maxDistanceKm: 35,
+          maxDistanceKm: MAX_SEARCH_DISTANCE_KM,
         },
         limit: 12,
       }),
@@ -101,7 +102,7 @@ describe("sourcing route input modes", () => {
     );
   });
 
-  it("filters out results beyond 35km when near coordinates are supplied", async () => {
+  it("filters out results beyond 35 miles (~56km) when near coordinates are supplied", async () => {
     mocks.adapterSearch.mockResolvedValueOnce([
       {
         source: "manual",
@@ -132,7 +133,7 @@ describe("sourcing route input modes", () => {
         query: "wireless mouse",
         location: {
           near: { lat: -6.2088, lng: 106.8456 },
-          maxDistanceKm: 35,
+          maxDistanceKm: MAX_SEARCH_DISTANCE_KM,
         },
       }),
     });
@@ -141,7 +142,47 @@ describe("sourcing route input modes", () => {
     const json = await response.json() as any;
     expect(json.items).toHaveLength(1);
     expect(json.items[0].title).toBe("Near Item");
-    expect(json.location.maxDistanceKm).toBe(35);
+    expect(json.location.maxDistanceKm).toBe(MAX_SEARCH_DISTANCE_KM);
+  });
+
+  it("caps legacy maxDistanceKm to 35 miles (~56km)", async () => {
+    mocks.adapterSearch.mockResolvedValueOnce([
+      {
+        source: "manual",
+        externalUrl: "https://example.com/items/near-legacy",
+        title: "Near Legacy Item",
+        imageUrl: "https://cdn.example.com/near-legacy-item.jpg",
+        priceIDR: 70_000,
+        pickupAddress: "Near legacy address",
+        pickupGeo: { lat: -6.209, lng: 106.846 },
+      },
+      {
+        source: "manual",
+        externalUrl: "https://example.com/items/far-legacy",
+        title: "Far Legacy Item",
+        imageUrl: "https://cdn.example.com/far-legacy-item.jpg",
+        priceIDR: 80_000,
+        pickupAddress: "Far legacy address",
+        pickupGeo: { lat: -7.0, lng: 107.6 },
+      },
+    ]);
+
+    const app = createApp();
+    const response = await app.request("/api/sourcing/search", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        query: "wireless keyboard",
+        near: { lat: -6.2088, lng: 106.8456 },
+        maxDistanceKm: 80,
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const json = await response.json() as any;
+    expect(json.location.maxDistanceKm).toBe(MAX_SEARCH_DISTANCE_KM);
+    expect(json.items).toHaveLength(1);
+    expect(json.items[0].title).toBe("Near Legacy Item");
   });
 
   it("resolves zipcode fallback into coordinates for search location", async () => {
@@ -170,7 +211,7 @@ describe("sourcing route input modes", () => {
         query: "cat food",
         location: {
           zipcode: "10110",
-          maxDistanceKm: 35,
+          maxDistanceKm: MAX_SEARCH_DISTANCE_KM,
         },
       }),
     });

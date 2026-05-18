@@ -1,4 +1,4 @@
-import { estimatePrice, getImageUrl } from "@goget/shared/sourcing";
+import { estimatePrice } from "@goget/shared/sourcing";
 import type { OverpassElement } from "./transport";
 
 interface LatLng {
@@ -11,7 +11,7 @@ export interface NearbySourcedItem {
   externalUrl: string;
   title: string;
   description: string;
-  imageUrl: string;
+  imageUrl?: string;
   priceIDR: number;
   merchantName: string;
   pickupAddress: string;
@@ -49,6 +49,17 @@ function toTitle(query: string): string {
   return query.charAt(0).toUpperCase() + query.slice(1);
 }
 
+function normalizeHttpUrl(value: string | undefined): string | null {
+  if (!value) return null;
+  try {
+    const normalized = new URL(value.trim()).toString();
+    if (!normalized.startsWith("http://") && !normalized.startsWith("https://")) return null;
+    return normalized;
+  } catch {
+    return null;
+  }
+}
+
 export function formatNearbyItems(input: {
   query: string;
   near: LatLng;
@@ -84,7 +95,7 @@ export function formatNearbyItems(input: {
       externalUrl: website,
       title: toTitle(input.query),
       description: `Available at ${name}${address ? ` · ${address}` : ""}`,
-      imageUrl: getImageUrl(input.query),
+      imageUrl: normalizeHttpUrl(tags.image) ?? undefined,
       priceIDR: estimatePrice(input.query),
       merchantName: name,
       pickupAddress: address || `Near ${lat.toFixed(4)}, ${lng.toFixed(4)}`,

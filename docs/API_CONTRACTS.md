@@ -37,7 +37,7 @@ Request shape (modern):
 - `location: {`
   - `near?: { lat: number, lng: number }`
   - `zipcode?: string` (Indonesia 5-digit postal code)
-  - `maxDistanceKm?: number` (default 35, max 35)
+  - `maxDistanceKm?: number` (default 56.33, max 56.33; equivalent to 35 miles)
   - `}`
 - `maxPriceIDR?: number`
 - `limit?: number` (default 12)
@@ -49,7 +49,7 @@ Legacy request shape remains accepted for backward compatibility:
 - `referenceUrl?: string`
 - `near?: { lat: number, lng: number }`
 - `zipcode?: string`
-- `maxDistanceKm?: number`
+- `maxDistanceKm?: number` (default 56.33, max 56.33; equivalent to 35 miles)
 - `maxPriceIDR?: number`
 - `limit?: number`
 - `requestId?: uuid`
@@ -70,7 +70,7 @@ Response shape:
 Notes:
 
 - If only `zipcode` is provided, the API geocodes zipcode → coordinates before sourcing.
-- Distance filtering is applied against the resolved location using `maxDistanceKm` (default 35km).
+- Distance filtering is applied against the resolved location using `maxDistanceKm` (default 56.33km / 35 miles).
 
 ### `POST /api/sourcing/test`
 

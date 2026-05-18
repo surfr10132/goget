@@ -150,7 +150,7 @@ For local dev use [ngrok](https://ngrok.com) to expose port 4000.
 - GoSend adapter (calculate + book + cancel + webhook parse)
 - Grab adapter (OAuth + quote + book + cancel + webhook parse)
 - Rate comparison with price/speed bias
-- Search intake supports either product URL or keyword, with 35km filtering by coordinates and zipcode geocode fallback
+- Search intake supports either product URL or keyword, with 35-mile (~56km) filtering by coordinates and zipcode geocode fallback
 - Tokopedia / Shopee / Bukalapak search adapters (URL/title/price/image only — no cart logic)
   with per-host rate limiting, retries, Zod validation, and tolerant per-item parsing
 - Midtrans Snap + signature-verified webhook (idempotent)

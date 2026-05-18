@@ -76,7 +76,7 @@ Users can find niche products online but still face friction in pickup and relia
 ### FR-1 Sourcing
 
 - Must accept either a product URL or a keyword query.
-- Must support location-aware filtering within a 35km radius, with zipcode fallback when precise coordinates are unavailable.
+- Must support location-aware filtering within a 35-mile radius (~56km), with zipcode fallback when precise coordinates are unavailable.
 - Must return normalized item cards: source, title, price, URL, image, seller/location metadata, and ranking context.
 - Must support test seed sourcing without live provider credentials.
 

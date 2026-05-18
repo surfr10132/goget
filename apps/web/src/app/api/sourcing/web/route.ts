@@ -3,12 +3,16 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { getClientIp, rateLimitHeaders, takeRateLimitToken } from "@/lib/server-rate-limit";
 import { parseJsonBody } from "@/app/api/_lib/validation";
+import { getImagePreviewUrl } from "@/lib/image-preview";
+import { fetchSourceSiteImage, normalizeHttpUrl } from "@/lib/source-site-image";
 
 const client = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null;
 const SOURCING_WEB_WINDOW_MS = 60 * 1000;
 const SOURCING_WEB_MAX_PER_IP = 12;
+const MAX_SEARCH_RADIUS_MILES = 35;
+const MAX_SEARCH_DISTANCE_KM = Number((MAX_SEARCH_RADIUS_MILES * 1.60934).toFixed(2));
 const SourcingWebRequestSchema = z.object({
   query: z.string().trim().min(1),
   near: z
@@ -17,12 +21,22 @@ const SourcingWebRequestSchema = z.object({
       lng: z.coerce.number().finite(),
     })
     .optional(),
+  maxDistanceKm: z.coerce.number().positive().max(MAX_SEARCH_DISTANCE_KM).optional().default(MAX_SEARCH_DISTANCE_KM),
   city: z.string().trim().optional(),
 });
 
 interface GeocodeLookupResult {
   lat: string;
   lon: string;
+}
+const BLOCKED_DOMAINS = [
+  "tokopedia", "shopee", "lazada", "bukalapak", "blibli",
+  "zalora", "jd.id", "orami", "sociolla", "amazon", "aliexpress", "ebay",
+];
+
+function isBlockedDomain(url: string): boolean {
+  const lower = url.toLowerCase();
+  return BLOCKED_DOMAINS.some((domain) => lower.includes(domain));
 }
 
 interface LlmWebItem {
@@ -38,72 +52,6 @@ interface LlmWebItem {
 
 interface LlmWebResponse {
   items?: LlmWebItem[];
-}
-
-const BLOCKED_DOMAINS = [
-  "tokopedia", "shopee", "lazada", "bukalapak", "blibli",
-  "zalora", "jd.id", "orami", "sociolla",
-];
-
-// ── Open Graph image extraction ────────────────────────────────────────────
-// Module-level cache so repeated searches for the same store page don't
-// re-fetch. Keyed by URL, value is the og:image URL or null if not found.
-const ogCache = new Map<string, string | null>();
-
-async function fetchOgImage(url: string): Promise<string | null> {
-  if (!url || url.startsWith("https://www.google.com/maps")) return null;
-  if (ogCache.has(url)) return ogCache.get(url)!;
-
-  try {
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(4_000),
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; GoGet-Bot/1.0; +https://goget.id)",
-        "Accept": "text/html",
-      },
-    });
-    if (!res.ok) { ogCache.set(url, null); return null; }
-
-    // Only read the first 8 KB — the <head> with meta tags is always near the top
-    const reader = res.body?.getReader();
-    if (!reader) { ogCache.set(url, null); return null; }
-    let html = "";
-    while (html.length < 8_192) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      html += new TextDecoder().decode(value);
-    }
-    reader.cancel();
-
-    const patterns = [
-      /<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["'][^>]*>/i,
-      /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image(?::secure_url)?["'][^>]*>/i,
-      /<meta[^>]+name=["']twitter:image(?::src)?["'][^>]+content=["']([^"']+)["'][^>]*>/i,
-      /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image(?::src)?["'][^>]*>/i,
-      /<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["'][^>]*>/i,
-      /<img[^>]+src=["']([^"']+)["'][^>]*>/i,
-    ];
-    for (const pattern of patterns) {
-      const match = html.match(pattern);
-      const candidate = match?.[1];
-      if (!candidate) continue;
-      try {
-        const absolute = new URL(candidate.trim().replaceAll("&amp;", "&"), url).toString();
-        if (absolute.startsWith("http://") || absolute.startsWith("https://")) {
-          ogCache.set(url, absolute);
-          return absolute;
-        }
-      } catch {
-        // Skip invalid candidate and continue.
-      }
-    }
-
-    ogCache.set(url, null);
-    return null;
-  } catch {
-    ogCache.set(url, null);
-    return null;
-  }
 }
 
 const SYSTEM = `You are a sourcing agent for GoGet — an Indonesian same-day delivery service that finds items at local physical stores.
@@ -166,7 +114,7 @@ export async function POST(req: NextRequest) {
   }
   const body = await parseJsonBody(req, SourcingWebRequestSchema);
   if (!body.success) return body.response;
-  const { query, near, city } = body.data;
+  const { query, near, city, maxDistanceKm } = body.data;
 
   if (!client) {
     return NextResponse.json({ items: [], source: "web", error: "no_api_key" });
@@ -209,24 +157,33 @@ export async function POST(req: NextRequest) {
     }
 
     const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
-
-    // Filter out marketplace domains and geocode in parallel
-    const filtered = rawItems.filter((item) => {
-      const url = (item.externalUrl ?? "").toLowerCase();
-      return !BLOCKED_DOMAINS.some((d) => url.includes(d));
-    });
+    // Keep only candidates that look like real local stores before geocoding.
+    const filtered = rawItems
+      .map((item) => {
+        const externalUrl = normalizeHttpUrl(item.externalUrl);
+        const title = item.title?.trim();
+        const merchantName = item.merchantName?.trim();
+        const pickupAddress = item.pickupAddress?.trim();
+        if (!externalUrl || isBlockedDomain(externalUrl)) return null;
+        if (!title || !merchantName || !pickupAddress) return null;
+        return {
+          ...item,
+          externalUrl,
+          title,
+          merchantName,
+          pickupAddress,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
     const geocoded = await Promise.all(
       filtered.map(async (item) => {
-        // Geocoding and OG image extraction run in parallel — neither waits for the other
-        const [geo, ogImage] = await Promise.all([
+        // Geocoding and source image extraction run in parallel — neither waits for the other.
+        const [geo, sourceSiteImage] = await Promise.all([
           item.pickupAddress
             ? geocodeAddress(item.pickupAddress, item.pickupCity ?? locationHint)
             : Promise.resolve(null),
-          // Only try OG extraction when Claude didn't already return an image URL
-          !item.imageUrl && item.externalUrl
-            ? fetchOgImage(item.externalUrl)
-            : Promise.resolve(null),
+          fetchSourceSiteImage(item.externalUrl),
         ]);
 
         const distanceKm =
@@ -243,18 +200,19 @@ export async function POST(req: NextRequest) {
               })()
             : undefined;
 
-        // Source image policy: prefer source-provided image and best-effort metadata extraction.
-        const imageUrl = item.imageUrl || ogImage || undefined;
+        // Source image policy: only use real source-page images, then serve a proxied preview when possible.
+        const sourceImageUrl = sourceSiteImage ?? normalizeHttpUrl(item.imageUrl) ?? undefined;
+        const imageUrl = await getImagePreviewUrl(sourceImageUrl);
 
         return {
           source: "web",
-          externalUrl: item.externalUrl ?? "",
+          externalUrl: item.externalUrl,
           title: item.title,
           description: item.description ?? "",
           imageUrl,
           priceIDR: item.priceIDR ?? 0,
           merchantName: item.merchantName,
-          pickupAddress: item.pickupAddress ?? "",
+          pickupAddress: item.pickupAddress,
           pickupCity: item.pickupCity ?? locationHint,
           pickupGeo: geo,
           availableQty: undefined,
@@ -262,11 +220,12 @@ export async function POST(req: NextRequest) {
         };
       }),
     );
-
-    // If near coords given, filter to 35km; otherwise return all
-    const results = near
-      ? geocoded.filter((i) => i.distanceKm === undefined || i.distanceKm <= 35)
-      : geocoded;
+    // Keep only geocoded local stores and enforce search radius when a location is supplied.
+    const results = geocoded.filter((item) => {
+      if (!item.pickupGeo) return false;
+      if (!near) return true;
+      return item.distanceKm !== undefined && item.distanceKm <= maxDistanceKm;
+    });
 
     return NextResponse.json({ items: results, source: "web" });
   } catch (e: unknown) {

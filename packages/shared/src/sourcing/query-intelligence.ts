@@ -32,7 +32,7 @@ export function categorizeQuery(query: string): QueryCategory {
   if (s.match(/lego|mainan|toy\b|doll|boneka|puzzle|board game|gundam|model kit|playmobil/)) return "toys";
   if (s.match(/buku|book\b|novel|komik|manga|majalah|alat tulis|stationery|pensil|pulpen|binder|rotring|drafting|technical pen|marker|drawing|paint brush|kuas|acrylic paint|cat akrilik|canvas|kanvas|art supply|watercolor|cat air|sketching/)) return "books";
   if (s.match(/sepatu|shoes|sneaker|sandal|slipper/)) return "shoes";
-  if (s.match(/badminton|raket|sepeda|bicycle|treadmill|dumbbell|barbell|gym|fitness|olahraga|sport|bola\b|futsal|basket|renang|fishing|pancing|pancingan|shimano|daiwa|surf|surfboard|yoga mat|skipping/)) return "sports";
+  if (s.match(/badminton|raket|sepeda|bicycle|treadmill|dumbbell|barbell|kettlebell|kettle bell|gym|fitness|olahraga|sport|bola\b|futsal|basket|renang|fishing|pancing|pancingan|shimano|daiwa|surf|surfboard|yoga mat|skipping/)) return "sports";
   if (s.match(/baju|kaos|kemeja|celana|dress|rok|blouse|jaket|hoodie|fashion|pakaian|\btas\b|\bbag\b|backpack|ransel|dompet|wallet|jam tangan|smartwatch|kacamata|glasses|sunglasses/)) return "fashion";
   if (s.match(/lipstik|mascara|eyeliner|foundation|bedak|blush|skincare|serum|moisturizer|sunscreen|parfum|perfume|shampoo|conditioner|sabun|body wash|deodorant|kosmetik|makeup|kecantikan/)) return "beauty";
   if (s.match(/gitar|guitar|ukulele|bass|piano|keyboard.*musik|drum|biola|violin|musik instrument|alat musik/)) return "music";

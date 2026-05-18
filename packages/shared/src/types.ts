@@ -115,7 +115,7 @@ export const IntakeCreateRequestInput = z
     inputType: IntakeInputType,
     inputValue: z.string().trim().min(2).max(2000),
     zipCode: z.string().trim().regex(/^[a-z0-9 -]{3,12}$/i, "invalid zip code"),
-    radiusKm: z.number().positive().max(50).default(35),
+    radiusKm: z.number().positive().max(56.33).default(56.33),
     quantity: z.number().int().min(1).max(20).default(1),
   })
   .superRefine((value, ctx) => {

@@ -10,7 +10,9 @@ export interface OverpassElement {
 }
 
 const OVERPASS_ENDPOINTS = [
-  "https://overpass-api.de/api/interpreter",
+  "https://lz4.overpass-api.de/api/interpreter",
+  "https://z.overpass-api.de/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
 ];
 
@@ -35,9 +37,13 @@ function buildOverpassQuery(
 async function fetchOverpass(url: string, overpassQuery: string): Promise<Response> {
   return fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Accept": "application/json",
+      "User-Agent": "GoGet-Web/1.0 (+https://goget.id)",
+    },
     body: `data=${encodeURIComponent(overpassQuery)}`,
-    signal: AbortSignal.timeout(22_000),
+    signal: AbortSignal.timeout(10_000),
   });
 }
 
@@ -53,18 +59,12 @@ export async function fetchOverpassElements(input: {
     input.maxDistanceKm * 1_000,
   );
 
-  let res: Response | null = null;
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const r = await fetchOverpass(endpoint, overpassQuery);
-      if (r.ok) {
-        res = r;
-        break;
-      }
-    } catch {
-      // try the next mirror
-    }
-  }
+  const attempts = OVERPASS_ENDPOINTS.map(async (endpoint) => {
+    const response = await fetchOverpass(endpoint, overpassQuery);
+    if (!response.ok) throw new Error(`overpass_${response.status}`);
+    return response;
+  });
+  const res = await Promise.any(attempts).catch(() => null);
 
   if (!res) return null;
   const data = await res.json();

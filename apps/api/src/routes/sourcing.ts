@@ -6,6 +6,10 @@ import { searchTestMerchants } from "../data/test-merchants";
 import { encryptPII, tokenizeAddress } from "../security/pii";
 
 export const sourcing = new Hono();
+const MAX_SEARCH_RADIUS_MILES = 35;
+const MAX_SEARCH_DISTANCE_KM = Number((MAX_SEARCH_RADIUS_MILES * 1.60934).toFixed(2));
+const MAX_SAME_DAY_READY_MINUTES = 12 * 60;
+const LOCAL_SAME_DAY_SOURCES = new Set(["directory", "manual"]);
 const SOURCE_IMAGE_CACHE_TTL_MS = 10 * 60 * 1000;
 const SOURCE_IMAGE_CACHE_MAX_ENTRIES = 500;
 const sourceImageCache = new Map<string, { value: string | null; expiresAt: number }>();
@@ -18,7 +22,7 @@ const LegacySearchInput = z.object({
   near: GeoInput.optional(),
   zipcode: ZipCodeInput.optional(),
   mode: SearchInputMode.optional(),
-  maxDistanceKm: z.number().positive().default(35),
+  maxDistanceKm: z.number().positive().default(MAX_SEARCH_DISTANCE_KM),
   maxPriceIDR: z.number().int().nonnegative().optional(),
   limit: z.number().int().min(1).max(50).default(12),
   requestId: z.string().uuid().optional(),
@@ -72,6 +76,7 @@ sourcing.post("/search", async c => {
   if (near) {
     items = applyDistanceFilter(items, near, body.maxDistanceKm);
   }
+  items = applyLocalSameDayPolicy(items);
 
   items = await enrichSourceImages(items);
 
@@ -130,6 +135,7 @@ sourcing.post("/test", async c => {
   if (near) {
     items = applyDistanceFilter(items as any, near, body.maxDistanceKm) as any;
   }
+  items = applyLocalSameDayPolicy(items);
 
   return c.json({
     mode: body.mode,
@@ -202,6 +208,22 @@ function withNormalizedMetadata<T extends {
     estimatedDeliveryMinutes: item.estReadyMinutes,
     rankingScore: Number((1 - index / Math.max(items.length, 1)).toFixed(4)),
   }));
+}
+
+function applyLocalSameDayPolicy<T extends {
+  source: string;
+  pickupAddress?: string;
+  pickupGeo?: { lat: number; lng: number } | null;
+  estReadyMinutes?: number;
+}>(
+  items: T[],
+): T[] {
+  return items.filter((item) => {
+    if (!LOCAL_SAME_DAY_SOURCES.has(item.source)) return false;
+    if (!item.pickupAddress || !item.pickupGeo) return false;
+    if (item.estReadyMinutes === undefined) return true;
+    return item.estReadyMinutes <= MAX_SAME_DAY_READY_MINUTES;
+  });
 }
 
 async function enrichSourceImages<T extends SourceImageCandidate>(items: T[]): Promise<T[]> {
@@ -327,7 +349,7 @@ function parseSearchInput(raw: unknown):
         referenceUrl: modern.data.referenceUrl,
         near: modern.data.location.near,
         zipcode: modern.data.location.zipcode,
-        maxDistanceKm: modern.data.location.maxDistanceKm,
+        maxDistanceKm: normalizeMaxDistanceKm(modern.data.location.maxDistanceKm),
         maxPriceIDR: modern.data.maxPriceIDR,
         limit: modern.data.limit,
         requestId: parsedRequestId.data,
@@ -354,7 +376,7 @@ function parseSearchInput(raw: unknown):
       referenceUrl,
       near: legacy.data.near,
       zipcode: legacy.data.zipcode,
-      maxDistanceKm: legacy.data.maxDistanceKm,
+      maxDistanceKm: normalizeMaxDistanceKm(legacy.data.maxDistanceKm),
       maxPriceIDR: legacy.data.maxPriceIDR,
       limit: legacy.data.limit,
       requestId: legacy.data.requestId,
@@ -364,6 +386,10 @@ function parseSearchInput(raw: unknown):
 
 function looksLikeUrl(value: string) {
   return /^https?:\/\//i.test(value.trim());
+}
+
+function normalizeMaxDistanceKm(maxDistanceKm: number) {
+  return Math.min(maxDistanceKm, MAX_SEARCH_DISTANCE_KM);
 }
 
 function inferQueryFromReferenceUrl(referenceUrl: string | undefined): string | null {

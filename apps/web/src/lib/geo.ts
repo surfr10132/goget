@@ -1,5 +1,9 @@
 export interface LatLng { lat: number; lng: number }
-interface NominatimSearchRow { lat: string; lon: string }
+interface PostalLookupResponse {
+  lat?: number;
+  lng?: number;
+  error?: string;
+}
 
 /** Haversine distance in km between two points. */
 export function distanceKm(a: LatLng, b: LatLng): number {
@@ -45,19 +49,12 @@ export function getBrowserLocation(timeoutMs = 8000): Promise<LatLng> {
  * Rate-limited to 1 req/s by Nominatim ToS — fine for user-initiated lookups.
  */
 export async function postalCodeToLatLng(code: string): Promise<LatLng> {
-  const url = new URL("https://nominatim.openstreetmap.org/search");
-  url.searchParams.set("postalcode", code);
-  url.searchParams.set("country", "Indonesia");
-  url.searchParams.set("format", "json");
-  url.searchParams.set("limit", "1");
-
-  const r = await fetch(url.toString(), {
-    headers: { "Accept-Language": "id,en", "User-Agent": "GoGet-App/1.0" },
-  });
-  if (!r.ok) throw new Error(`Nominatim ${r.status}`);
-  const data = await r.json() as NominatimSearchRow[];
-  if (!data.length) throw new Error(`Postal code "${code}" not found in Indonesia`);
-  return { lat: Number(data[0].lat), lng: Number(data[0].lon) };
+  const r = await fetch(`/api/geocode?mode=postal&code=${encodeURIComponent(code)}`);
+  const data = await r.json() as PostalLookupResponse;
+  if (!r.ok || !Number.isFinite(data.lat) || !Number.isFinite(data.lng)) {
+    throw new Error(data.error ?? `Postal code "${code}" not found in Indonesia`);
+  }
+  return { lat: Number(data.lat), lng: Number(data.lng) };
 }
 
 /** Format km for display: "1.2 km" or "800 m". */

@@ -24,12 +24,14 @@ interface Suggestion {
 
 // Central Jakarta — first-load map view before the user does anything.
 const FALLBACK_CENTER: LatLng = { lat: -6.2088, lng: 106.8456 };
+const MAX_RADIUS_MILES = 35;
+const MAX_DISTANCE_KM = Number((MAX_RADIUS_MILES * 1.60934).toFixed(2));
 
 export function LocationPicker({ onLocation }: Props) {
   const [postal, setPostal] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [showFallback, setShowFallback] = useState(false);
+  const [showFallback] = useState(true);
 
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -50,7 +52,7 @@ export function LocationPicker({ onLocation }: Props) {
       const loc = await getBrowserLocation();
       onLocation(loc, "Your location");
     } catch {
-      setShowFallback(true);
+      setErr("Could not get your current location. Search, pin on map, or enter postal code.");
     } finally {
       setBusy(false);
     }
@@ -97,7 +99,6 @@ export function LocationPicker({ onLocation }: Props) {
     setPin(loc);
     setPinLabel(s.label);
     setMapCenter(loc);
-    setShowFallback(true);
   }
 
   async function reverseLookup(loc: LatLng) {
@@ -158,7 +159,7 @@ export function LocationPicker({ onLocation }: Props) {
       <div>
         <p className="font-medium text-sm">Where should we deliver?</p>
         <p className="text-xs text-gray-500 mt-0.5">
-          We only show stores within 35&nbsp;km of you.
+          We only show stores within {MAX_RADIUS_MILES} miles ({Math.round(MAX_DISTANCE_KM)} km) of you.
         </p>
       </div>
 

@@ -23,6 +23,8 @@ interface Item {
 // Hard-coded drop-off until the mobile app has a real LocationPicker.
 // TODO: replace with a real picker (expo-location + map picker).
 const DEFAULT_DROP = { lat: -6.2088, lng: 106.8456, label: "Jakarta" };
+const MAX_RADIUS_MILES = 35;
+const MAX_DISTANCE_KM = Number((MAX_RADIUS_MILES * 1.60934).toFixed(2));
 
 export default function SearchScreen() {
   const { q, referenceUrl } = useLocalSearchParams<{ q: string; referenceUrl?: string }>();
@@ -62,7 +64,7 @@ export default function SearchScreen() {
       referenceUrl,
       location: {
         near,
-        maxDistanceKm: 35,
+        maxDistanceKm: MAX_DISTANCE_KM,
       },
       limit: 12,
     };
@@ -97,12 +99,12 @@ export default function SearchScreen() {
       renderItem={({ item }) => (
         <Pressable
           onPress={() => {
-            // Marketplace sources (tokopedia/shopee/bukalapak/web with a URL)
+            // Marketplace sources (tokopedia/shopee/bukalapak with a URL)
             // route through the WebView handoff; everything else (directory,
             // nearby OSM, etc.) goes straight to the concierge form.
             const marketplaceSource =
               item.source === "tokopedia" || item.source === "shopee" ||
-              item.source === "bukalapak" || item.source === "web";
+              item.source === "bukalapak";
             const params: Record<string, string> = {
               source: marketplaceSource ? item.source : "manual",
               title: item.title,

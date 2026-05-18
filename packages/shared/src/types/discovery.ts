@@ -6,11 +6,13 @@ export type SearchInputMode = z.infer<typeof SearchInputMode>;
 
 export const ZipCode = z.string().trim().regex(/^\d{5}$/, "invalid zip code");
 export type ZipCode = z.infer<typeof ZipCode>;
+const MAX_SEARCH_RADIUS_MILES = 35;
+const MAX_SEARCH_DISTANCE_KM = Number((MAX_SEARCH_RADIUS_MILES * 1.60934).toFixed(2));
 
 export const SearchLocation = z.object({
   near: Geo.optional(),
   zipcode: ZipCode.optional(),
-  maxDistanceKm: z.number().positive().max(35).default(35),
+  maxDistanceKm: z.number().positive().max(MAX_SEARCH_DISTANCE_KM).default(MAX_SEARCH_DISTANCE_KM),
 }).superRefine((value, ctx) => {
   if (value.near || value.zipcode) return;
   ctx.addIssue({

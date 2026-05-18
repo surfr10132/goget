@@ -13,10 +13,8 @@ import {
 } from "@goget/shared";
 import { api, isSignedIn } from "@/lib/api";
 import { loadSession } from "@/lib/auth-session";
-import { ProductWebView } from "@/components/ProductWebView";
 import { OrderConfirmation } from "@/components/OrderConfirmation";
-
-type Step = "handoff" | "confirm" | "address" | "courier" | "review" | "done";
+type Step = "confirm" | "address" | "courier" | "review" | "done";
 type OrderCreateIdempotencyContext = { fingerprint: string; key: string };
 
 interface Rate {
@@ -68,7 +66,6 @@ function CheckoutInner() {
   const dropLat = Number(params.get("dropLat"));
   const dropLng = Number(params.get("dropLng"));
   const hasGeo = !!(pickupLat && pickupLng && dropLat && dropLng);
-  const isMarketplaceHandoff = Boolean(sourceUrl);
 
   // Auth gate.
   const [authChecked, setAuthChecked] = useState(false);
@@ -89,7 +86,7 @@ function CheckoutInner() {
   }, [params, router]);
 
   // Concierge flow state.
-  const [step, setStep] = useState<Step>(isMarketplaceHandoff ? "handoff" : "confirm");
+  const [step, setStep] = useState<Step>("confirm");
   const [purchase, setPurchase] = useState<MarketplacePurchase | null>(null);
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
@@ -222,6 +219,9 @@ function CheckoutInner() {
           Demo mode: placing an order will fail with 401. Sign in for a real session.
         </div>
       )}
+      <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-900">
+        GoGet supports local businesses only. Pay the merchant directly first, then pay GoGet for delivery.
+      </div>
 
       <div className="flex items-start gap-3">
         {thumbnail && (
@@ -238,7 +238,7 @@ function CheckoutInner() {
           <div>
           <h1 className="text-xl font-bold line-clamp-2">{title}</h1>
           {merchant && <p className="text-sm text-gray-500 mt-0.5">🏪 {merchant}</p>}
-          {distanceKm !== null && step !== "handoff" && (
+          {distanceKm !== null && (
             <p className="text-sm text-gray-500">📍 {distanceKm.toFixed(1)} km from you</p>
           )}
           </div>
@@ -251,26 +251,10 @@ function CheckoutInner() {
           </div>
       </div>
 
-      {step === "handoff" && (
-        <section className="space-y-4">
-          <h2 className="font-semibold">1 · Place your order on the marketplace</h2>
-          <ProductWebView
-            product={{
-              source: productSource,
-              title,
-              url: sourceUrl,
-              thumbnailUrl: thumbnail || undefined,
-              priceIDRDisplay: priceDisplay || undefined,
-              sellerName: merchant || undefined,
-            }}
-            onPlaced={() => setStep("confirm")}
-          />
-        </section>
-      )}
 
       {step === "confirm" && (
         <section className="space-y-4">
-          <h2 className="font-semibold">2 · Confirm your purchase</h2>
+          <h2 className="font-semibold">1 · Confirm merchant payment</h2>
           <OrderConfirmation
             initial={{
               source: productSource,
@@ -286,7 +270,7 @@ function CheckoutInner() {
 
       {step === "address" && purchase && (
         <section className="space-y-4">
-          <h2 className="font-semibold">3 · Pickup &amp; delivery</h2>
+          <h2 className="font-semibold">2 · Pickup &amp; delivery</h2>
           <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600">
             <p>📦 Pickup: <span className="text-gray-900">{pickupAddress || merchant || "Seller location"}</span></p>
           </div>
@@ -306,7 +290,7 @@ function CheckoutInner() {
 
       {step === "courier" && purchase && (
         <section className="space-y-4">
-          <h2 className="font-semibold">4 · Choose courier</h2>
+          <h2 className="font-semibold">3 · Choose courier</h2>
           {!hasGeo && (
             <p className="text-sm text-amber-700 bg-amber-50 rounded-xl p-3">
               Pickup / delivery coordinates missing — go back to search and pick a store with a location.
@@ -351,12 +335,12 @@ function CheckoutInner() {
 
       {step === "review" && fees && selectedRate && purchase && (
         <section className="space-y-4">
-          <h2 className="font-semibold">5 · Review &amp; pay</h2>
+          <h2 className="font-semibold">4 · Review &amp; pay</h2>
           <div className="text-sm space-y-1 text-gray-600">
             <div>📦 <span className="text-gray-900">{recipientName}</span> · {recipientPhone}</div>
             <div>📍 {dropoffAddress}</div>
             <div>🚀 {selectedRate.label} · ~{selectedRate.etaMinutes} min</div>
-            <div>💳 Item paid on marketplace: {formatIDR(purchase.priceIDRDeclared)}</div>
+            <div>💳 Item paid to merchant: {formatIDR(purchase.priceIDRDeclared)}</div>
           </div>
           <div className="rounded-xl bg-gray-50 p-4 space-y-2 text-sm">
             <Row label="Courier fee" value={formatIDR(fees.courierFeeIDR)} />
@@ -366,7 +350,7 @@ function CheckoutInner() {
               <Row label="Total to GoGet" value={formatIDR(fees.totalIDR)} bold />
             </div>
             <p className="text-[11px] text-gray-500 pt-1">
-              You already paid {formatIDR(purchase.priceIDRDeclared)} to the seller on the marketplace.
+              You already paid {formatIDR(purchase.priceIDRDeclared)} to the local merchant.
             </p>
           </div>
           {placeError && <div className="text-red-600 text-sm bg-red-50 rounded-xl p-3">{placeError}</div>}

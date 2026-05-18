@@ -6,6 +6,8 @@ import { decryptPII } from "../security/pii";
 import { buildRateSnapshotForStorage } from "./courier-rate-snapshot";
 
 export const quotes = new Hono();
+const MAX_DELIVERY_RADIUS_MILES = 35;
+const MAX_DELIVERY_DISTANCE_KM = Number((MAX_DELIVERY_RADIUS_MILES * 1.60934).toFixed(2));
 
 const RateInput = z.object({
   quoteId: z.string().uuid(),
@@ -40,8 +42,11 @@ const PreviewRateInput = z.object({
 quotes.post("/preview-rates", async c => {
   const input = PreviewRateInput.parse(await c.req.json());
   const distKm = parseFloat(distanceKm(input.pickup, input.dropoff).toFixed(2));
-  if (distKm > 35) {
-    return c.json({ error: `Distance ${distKm.toFixed(1)} km exceeds 35 km limit` }, 422);
+  if (distKm > MAX_DELIVERY_DISTANCE_KM) {
+    return c.json(
+      { error: `Distance ${distKm.toFixed(1)} km exceeds ${MAX_DELIVERY_RADIUS_MILES} miles (${MAX_DELIVERY_DISTANCE_KM.toFixed(2)} km) limit` },
+      422,
+    );
   }
   const round = (n: number) => Math.round(n / 500) * 500;
   type Tier = "instant" | "sameday" | "car_instant" | "car_sameday";
