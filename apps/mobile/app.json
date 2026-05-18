@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "GoGet",
+    "slug": "goget",
+    "scheme": "goget",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": { "bundleIdentifier": "id.goget.app", "supportsTablet": false },
+    "android": { "package": "id.goget.app", "adaptiveIcon": { "backgroundColor": "#16a45f" } },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": true }
+  }
+}

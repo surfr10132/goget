@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm -F @goget/api typecheck)",
+      "Bash(supabase --version)"
+    ]
+  }
+}

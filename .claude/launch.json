@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "goget-web",
+      "runtimeExecutable": "node_modules/.bin/next",
+      "runtimeArgs": ["dev", "-p", "3000"],
+      "cwd": "apps/web",
+      "port": 3000
+    }
+  ]
+}
