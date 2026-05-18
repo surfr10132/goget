@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getShopTypes } from "@goget/shared/sourcing";
 import { parseJsonBody } from "@/app/api/_lib/validation";
 import { getImagePreviewUrl } from "@/lib/image-preview";
+import { fetchSourceSiteImage, normalizeHttpUrl } from "@/lib/source-site-image";
 import { fetchOverpassElements } from "./transport";
 import { formatNearbyItems } from "./formatting";
 const MAX_SEARCH_RADIUS_MILES = 35;
@@ -49,7 +50,10 @@ export async function POST(req: NextRequest) {
     const items = formatNearbyItems({ query, near, maxDistanceKm, elements }).slice(0, 12);
     const enrichedItems = await Promise.all(
       items.map(async (item) => {
-        const imageUrl = await getImagePreviewUrl(item.imageUrl);
+        const normalizedTagImage = normalizeHttpUrl(item.imageUrl) ?? undefined;
+        const sourceSiteImage = normalizedTagImage ? null : await fetchSourceSiteImage(item.externalUrl);
+        const sourceImageUrl = sourceSiteImage ?? normalizedTagImage;
+        const imageUrl = await getImagePreviewUrl(sourceImageUrl);
         return { ...item, imageUrl };
       }),
     );
