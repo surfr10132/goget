@@ -98,9 +98,7 @@ function SearchInner() {
   }
 
   function getSourcePreviewUrl(item: SourcedItem): string | undefined {
-    if (item.imageUrl) return item.imageUrl;
-    if (!item.externalUrl) return undefined;
-    return `https://s.wordpress.com/mshots/v1/${encodeURIComponent(item.externalUrl)}?w=800`;
+    return item.imageUrl;
   }
 
   function mergeItems(existing: SourcedItem[], incoming: SourcedItem[]): SourcedItem[] {
