@@ -23,13 +23,23 @@ type ImageCandidate = {
 type FetchSourceSiteImageOptions = {
   query?: string;
 };
+type ApifyConfig = {
+  token: string;
+  actorId: string;
+  baseUrl: string;
+};
 
 const SOURCE_IMAGE_CACHE_TTL_MS = 60 * 60 * 1000;
 const SOURCE_IMAGE_FAILURE_TTL_MS = 10 * 60 * 1000;
 const SOURCE_IMAGE_FETCH_TIMEOUT_MS = 3_000;
+const SOURCE_IMAGE_APIFY_TIMEOUT_MS = 5_000;
 const MAX_HTML_BYTES = 250_000;
 const MAX_IMAGE_CANDIDATES = 40;
 const MIN_IMAGE_SCORE = 35;
+const MAX_APIFY_IMAGE_CANDIDATES = 30;
+const MIN_APIFY_IMAGE_SCORE = 18;
+const DEFAULT_APIFY_API_BASE_URL = "https://api.apify.com/v2";
+const DEFAULT_APIFY_IMAGE_ACTOR_ID = "skipper_lume/ecommerce-product-scraper";
 const sourceSiteImageCache = new Map<string, CachedSourceSiteImage>();
 
 export function normalizeHttpUrl(value: string | undefined | null): string | null {
@@ -205,6 +215,132 @@ function chooseBestImageCandidate(candidates: ImageCandidate[], query: string | 
   return ranked[0].candidate.url;
 }
 
+function getApifyConfig(): ApifyConfig | null {
+  const token = process.env.APIFY_TOKEN?.trim();
+  if (!token) return null;
+  const actorId = (
+    process.env.APIFY_IMAGE_ACTOR_ID
+    ?? process.env.APIFY_ACTOR_ID
+    ?? DEFAULT_APIFY_IMAGE_ACTOR_ID
+  ).trim();
+  if (!actorId) return null;
+  const baseUrl = (process.env.APIFY_API_BASE_URL ?? DEFAULT_APIFY_API_BASE_URL).trim().replace(/\/+$/, "");
+  if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) return null;
+  return { token, actorId, baseUrl };
+}
+
+function collectApifyImageCandidatesFromValue(value: unknown, out: string[], depth = 0): void {
+  if (depth > 4 || out.length >= MAX_APIFY_IMAGE_CANDIDATES) return;
+  if (!value) return;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed) out.push(trimmed);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      collectApifyImageCandidatesFromValue(entry, out, depth + 1);
+      if (out.length >= MAX_APIFY_IMAGE_CANDIDATES) break;
+    }
+    return;
+  }
+  if (typeof value !== "object") return;
+  const record = value as Record<string, unknown>;
+  const directKeys = [
+    "image",
+    "imageUrl",
+    "image_url",
+    "mainImage",
+    "thumbnail",
+    "thumb",
+    "ogImage",
+    "url",
+    "src",
+  ];
+  for (const key of directKeys) {
+    const direct = record[key];
+    if (typeof direct === "string" && direct.trim()) out.push(direct.trim());
+    if (out.length >= MAX_APIFY_IMAGE_CANDIDATES) return;
+  }
+  const collectionKeys = ["images", "imageUrls", "gallery", "thumbnails", "photos", "media", "product"];
+  for (const key of collectionKeys) {
+    collectApifyImageCandidatesFromValue(record[key], out, depth + 1);
+    if (out.length >= MAX_APIFY_IMAGE_CANDIDATES) return;
+  }
+  for (const nested of Object.values(record)) {
+    if (typeof nested === "object" && nested) {
+      collectApifyImageCandidatesFromValue(nested, out, depth + 1);
+      if (out.length >= MAX_APIFY_IMAGE_CANDIDATES) return;
+    }
+  }
+}
+
+function scoreApifyImageCandidate(url: string, queryTerms: string[]): number {
+  let score = 20;
+  const lowerUrl = url.toLowerCase();
+  if (looksLikeLogoOrIcon(lowerUrl)) score -= 90;
+  if (looksLikeGenericBanner(lowerUrl)) score -= 20;
+  if (/\.svg(?:[?#]|$)/i.test(lowerUrl)) score -= 12;
+  if (/\/products?\//i.test(lowerUrl) || /\/item\//i.test(lowerUrl) || /\/sku\//i.test(lowerUrl)) score += 10;
+  if (/\/images?\//i.test(lowerUrl) || /cdn/i.test(lowerUrl)) score += 4;
+  for (const term of queryTerms) {
+    if (lowerUrl.includes(term)) score += 6;
+  }
+  return score;
+}
+
+function chooseBestApifyImageCandidate(rawCandidates: string[], pageUrl: string, query: string | undefined): string | null {
+  if (!rawCandidates.length) return null;
+  const dedupe = new Set<string>();
+  const queryTerms = tokenizeQuery(query);
+  const scored = rawCandidates
+    .map((candidate) => normalizeCandidateUrl(candidate, pageUrl))
+    .filter((candidate): candidate is string => Boolean(candidate))
+    .filter((candidate) => {
+      if (dedupe.has(candidate)) return false;
+      dedupe.add(candidate);
+      return true;
+    })
+    .map((candidate) => ({ candidate, score: scoreApifyImageCandidate(candidate, queryTerms) }))
+    .sort((a, b) => b.score - a.score);
+  if (!scored.length || scored[0].score < MIN_APIFY_IMAGE_SCORE) return null;
+  return scored[0].candidate;
+}
+
+async function fetchImageFromApify(pageUrl: string, query: string | undefined): Promise<string | null> {
+  const config = getApifyConfig();
+  if (!config) return null;
+  try {
+    const runSyncDatasetUrl = `${config.baseUrl}/acts/${encodeURIComponent(config.actorId)}/run-sync-get-dataset-items`;
+    const res = await fetch(runSyncDatasetUrl, {
+      method: "POST",
+      signal: AbortSignal.timeout(SOURCE_IMAGE_APIFY_TIMEOUT_MS),
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${config.token}`,
+        "User-Agent": "GoGet-ImageFallback/1.0 (+https://goget.id)",
+      },
+      body: JSON.stringify({
+        urls: [pageUrl],
+        maxConcurrency: 1,
+        maxRequestsPerCrawl: 1,
+        maxItems: 1,
+        forcePlaywright: false,
+      }),
+    });
+    if (!res.ok) return null;
+    const contentType = res.headers.get("content-type")?.toLowerCase() ?? "";
+    if (!contentType.includes("application/json")) return null;
+    const payload = await res.json();
+    const rawCandidates: string[] = [];
+    collectApifyImageCandidatesFromValue(payload, rawCandidates);
+    return chooseBestApifyImageCandidate(rawCandidates, pageUrl, query);
+  } catch {
+    return null;
+  }
+}
+
 function extractImageFromHtml(html: string, pageUrl: string, query: string | undefined): string | null {
   const $ = load(html);
   const dedupe = new Set<string>();
@@ -320,6 +456,12 @@ export async function fetchSourceSiteImage(
     if (extracted) {
       setCache(extracted, SOURCE_IMAGE_CACHE_TTL_MS);
       return extracted;
+    }
+
+    const apifyExtracted = await fetchImageFromApify(normalizedUrl, query);
+    if (apifyExtracted) {
+      setCache(apifyExtracted, SOURCE_IMAGE_CACHE_TTL_MS);
+      return apifyExtracted;
     }
 
     setCache(null, SOURCE_IMAGE_FAILURE_TTL_MS);
