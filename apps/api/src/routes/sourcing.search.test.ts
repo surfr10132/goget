@@ -54,6 +54,13 @@ const MAX_SEARCH_DISTANCE_KM = Number((35 * 1.60934).toFixed(2));
 describe("sourcing route input modes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("<html><head><title>noop</title></head></html>", {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      })),
+    );
   });
 
   afterEach(() => {
@@ -225,5 +232,82 @@ describe("sourcing route input modes", () => {
         near: { lat: -6.1754, lng: 106.8272 },
       }),
     );
+  });
+
+  it("prefers retailer website image over adapter image when source page has og:image", async () => {
+    mocks.adapterSearch.mockResolvedValueOnce([
+      {
+        source: "manual",
+        externalUrl: "https://retailer.example/product/abc",
+        title: "Retailer Item",
+        imageUrl: "https://cdn.example.com/adapter-image.jpg",
+        priceIDR: 110_000,
+        pickupAddress: "Jl. Sudirman 10",
+        pickupGeo: { lat: -6.2088, lng: 106.8456 },
+      },
+    ]);
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(
+        "<html><head><meta property=\"og:image\" content=\"https://retailer.example/images/from-site.jpg\" /></head></html>",
+        {
+          status: 200,
+          headers: { "content-type": "text/html; charset=utf-8" },
+        },
+      )),
+    );
+
+    const app = createApp();
+    const response = await app.request("/api/sourcing/search", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        mode: "keyword",
+        query: "retailer item",
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const json = await response.json() as any;
+    expect(json.items).toHaveLength(1);
+    expect(json.items[0].imageUrl).toBe("https://retailer.example/images/from-site.jpg");
+  });
+
+  it("falls back to adapter image when retailer website image is unavailable", async () => {
+    mocks.adapterSearch.mockResolvedValueOnce([
+      {
+        source: "manual",
+        externalUrl: "https://retailer.example/product/no-image",
+        title: "Fallback Item",
+        imageUrl: "https://cdn.example.com/fallback-image.jpg",
+        priceIDR: 95_000,
+        pickupAddress: "Jl. Thamrin 5",
+        pickupGeo: { lat: -6.2, lng: 106.81 },
+      },
+    ]);
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("<html><head><title>No image</title></head></html>", {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      })),
+    );
+
+    const app = createApp();
+    const response = await app.request("/api/sourcing/search", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        mode: "keyword",
+        query: "fallback item",
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const json = await response.json() as any;
+    expect(json.items).toHaveLength(1);
+    expect(json.items[0].imageUrl).toBe("https://cdn.example.com/fallback-image.jpg");
   });
 });
