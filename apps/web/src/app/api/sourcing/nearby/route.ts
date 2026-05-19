@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getShopTypes } from "@goget/shared/sourcing";
 import { parseJsonBody } from "@/app/api/_lib/validation";
-import { getImagePreviewUrl } from "@/lib/image-preview";
+import { buildImagePreviewUrl } from "@/lib/image-preview";
 import { fetchSourceSiteImage, normalizeHttpUrl } from "@/lib/source-site-image";
+import { discoverMerchantWebsite } from "@/lib/merchant-site-discovery";
 import { fetchOverpassElements } from "./transport";
 import { formatNearbyItems } from "./formatting";
 const MAX_SEARCH_RADIUS_MILES = 35;
@@ -17,6 +18,12 @@ const NearbyRequestSchema = z.object({
   }),
   maxDistanceKm: z.number().positive().max(MAX_SEARCH_DISTANCE_KM).optional().default(MAX_SEARCH_DISTANCE_KM),
 });
+
+function isGoogleMapsUrl(url: string | undefined): boolean {
+  const normalized = normalizeHttpUrl(url);
+  if (!normalized) return false;
+  return normalized.includes("google.com/maps");
+}
 
 export async function POST(req: NextRequest) {
   const body = await parseJsonBody(req, NearbyRequestSchema);
@@ -51,9 +58,20 @@ export async function POST(req: NextRequest) {
     const enrichedItems = await Promise.all(
       items.map(async (item) => {
         const normalizedTagImage = normalizeHttpUrl(item.imageUrl) ?? undefined;
-        const sourceSiteImage = normalizedTagImage ? null : await fetchSourceSiteImage(item.externalUrl);
-        const sourceImageUrl = sourceSiteImage ?? normalizedTagImage;
-        const imageUrl = await getImagePreviewUrl(sourceImageUrl);
+        let sourceListingUrl = item.externalUrl;
+        if (isGoogleMapsUrl(sourceListingUrl)) {
+          const discoveredWebsite = await discoverMerchantWebsite({
+            merchantName: item.merchantName,
+            city: item.pickupCity,
+            productQuery: query,
+          });
+          if (discoveredWebsite) sourceListingUrl = discoveredWebsite;
+        }
+        const sourceSiteImage = await fetchSourceSiteImage(sourceListingUrl, {
+          query: `${query} ${item.merchantName}`,
+        });
+        const sourceImageUrl = sourceSiteImage ?? normalizedTagImage ?? undefined;
+        const imageUrl = buildImagePreviewUrl(sourceImageUrl);
         return { ...item, imageUrl };
       }),
     );

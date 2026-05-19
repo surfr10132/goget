@@ -24,6 +24,64 @@ interface SourcedItem {
 const MAX_RADIUS_MILES = 35;
 const MAX_DISTANCE_KM = Number((MAX_RADIUS_MILES * 1.60934).toFixed(2));
 const MAX_RADIUS_LABEL = `${MAX_RADIUS_MILES} miles (${Math.round(MAX_DISTANCE_KM)} km)`;
+const PRODUCT_FALLBACK_IMAGE_URL = "/images/product-placeholder.svg";
+
+interface ResultPreviewImageProps {
+  previewImageUrl?: string;
+  title: string;
+  showSourceBadge: boolean;
+  priority: boolean;
+}
+
+function ResultPreviewImage({
+  previewImageUrl,
+  title,
+  showSourceBadge,
+  priority,
+}: ResultPreviewImageProps) {
+  const [useFallback, setUseFallback] = useState(!previewImageUrl);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setUseFallback(!previewImageUrl);
+    setIsLoaded(false);
+  }, [previewImageUrl]);
+
+  const currentSrc = useFallback ? PRODUCT_FALLBACK_IMAGE_URL : previewImageUrl ?? PRODUCT_FALLBACK_IMAGE_URL;
+
+  const imageNode = (
+    <>
+      {!isLoaded && <div className="absolute inset-0 bg-gray-100 animate-pulse" aria-hidden />}
+      <Image
+        src={currentSrc}
+        alt={title}
+        fill
+        priority={priority}
+        className={`object-cover transition-opacity duration-200 ${showSourceBadge ? "group-hover:scale-[1.02] transition-transform duration-200" : ""} ${isLoaded ? "opacity-100" : "opacity-0"}`}
+        sizes="(max-width: 640px) 100vw, 33vw"
+        onLoadingComplete={() => setIsLoaded(true)}
+        onError={() => {
+          if (!useFallback) {
+            setUseFallback(true);
+            setIsLoaded(false);
+            return;
+          }
+          setIsLoaded(true);
+        }}
+      />
+    </>
+  );
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {imageNode}
+      {showSourceBadge && (
+        <span className="absolute left-2 bottom-2 text-[11px] font-semibold text-white bg-black/55 px-2 py-1 rounded-full">
+          View source listing
+        </span>
+      )}
+    </div>
+  );
+}
 
 
 // ── Main search inner ──────────────────────────────────────────────────────
@@ -195,45 +253,24 @@ function SearchInner() {
               return (
                 <li
                   key={`${it.source}-${i}`}
-                  className="rounded-2xl border border-gray-100 hover:border-brand-400 transition overflow-hidden flex flex-col"
+                  className="relative group rounded-2xl border border-gray-100 hover:border-brand-400 transition overflow-hidden flex flex-col"
                 >
+                  {it.externalUrl && (
+                    <a
+                      href={it.externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute inset-0 z-10"
+                      aria-label={`Open ${it.title} on source site`}
+                    />
+                  )}
                   <div className="relative aspect-square bg-gray-50">
-                    {previewImageUrl ? (
-                      it.externalUrl ? (
-                        <a
-                          href={it.externalUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="absolute inset-0 block group"
-                          aria-label={`Open ${it.title} on source site`}
-                        >
-                          <Image
-                            src={previewImageUrl}
-                            alt={it.title}
-                            fill
-                            priority={i < 3}
-                            className="object-cover group-hover:scale-[1.02] transition-transform"
-                            sizes="(max-width: 640px) 100vw, 33vw"
-                            unoptimized
-                          />
-                          <span className="absolute left-2 bottom-2 text-[11px] font-semibold text-white bg-black/55 px-2 py-1 rounded-full">
-                            View source listing
-                          </span>
-                        </a>
-                      ) : (
-                        <Image
-                          src={previewImageUrl}
-                          alt={it.title}
-                          fill
-                          priority={i < 3}
-                          className="object-cover"
-                          sizes="(max-width: 640px) 100vw, 33vw"
-                          unoptimized
-                        />
-                      )
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-4xl">📦</div>
-                    )}
+                    <ResultPreviewImage
+                      previewImageUrl={previewImageUrl}
+                      title={it.title}
+                      showSourceBadge={Boolean(it.externalUrl)}
+                      priority={i < 3}
+                    />
                     {dist !== null && (
                       <span className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-xs font-semibold px-2 py-0.5 rounded-full border border-gray-200 shadow-sm">
                         {formatDistance(dist)}
@@ -264,7 +301,7 @@ function SearchInner() {
                           href={it.externalUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[10px] text-gray-400 hover:text-blue-500 underline ml-auto"
+                          className="relative z-20 text-[10px] text-gray-400 hover:text-blue-500 underline ml-auto"
                           onClick={e => e.stopPropagation()}
                         >
                           {it.source === "nearby" ? "maps" : "view store"}
@@ -319,7 +356,7 @@ function SearchInner() {
                       return (
                         <button
                           onClick={goCheckout}
-                          className="mt-2 w-full py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold"
+                          className="relative z-20 mt-2 w-full py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold"
                         >
                           {marketplaceSource && it.externalUrl ? `Order on ${sourceLabel}` : "Schedule pickup"}
                         </button>

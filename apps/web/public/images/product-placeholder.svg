@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" fill="none">
+  <rect width="600" height="600" fill="#F3F4F6"/>
+  <rect x="120" y="150" width="360" height="300" rx="28" fill="#E5E7EB"/>
+  <rect x="160" y="190" width="280" height="220" rx="20" fill="#D1D5DB"/>
+  <path d="M228 348L282 292L332 338L370 300L426 366H174L228 348Z" fill="#9CA3AF"/>
+  <circle cx="236" cy="252" r="22" fill="#9CA3AF"/>
+  <text x="300" y="498" text-anchor="middle" fill="#6B7280" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="28" font-weight="600">No preview available</text>
+</svg>

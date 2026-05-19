@@ -228,11 +228,11 @@ function applyLocalSameDayPolicy<T extends {
 
 async function enrichSourceImages<T extends SourceImageCandidate>(items: T[]): Promise<T[]> {
   const enriched = await Promise.all(items.map(async (item) => {
-    const normalizedExisting = normalizeAbsoluteUrl(item.imageUrl, item.externalUrl);
-    if (normalizedExisting) return { ...item, imageUrl: normalizedExisting };
     const sourceImage = await fetchImageFromSourcePage(item.externalUrl);
-    if (!sourceImage) return item;
-    return { ...item, imageUrl: sourceImage };
+    const normalizedExisting = normalizeAbsoluteUrl(item.imageUrl, item.externalUrl);
+    const preferredImage = sourceImage ?? normalizedExisting;
+    if (!preferredImage) return item;
+    return { ...item, imageUrl: preferredImage };
   }));
   return enriched;
 }
