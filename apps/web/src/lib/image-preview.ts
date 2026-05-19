@@ -11,6 +11,7 @@ type FailedPreview = {
 const PREVIEW_TTL_MS = 30 * 60 * 1000;
 const FAILED_PREVIEW_TTL_MS = 2 * 60 * 1000;
 const MAX_IMAGE_BYTES = 450_000;
+const IMAGE_PREVIEW_FETCH_TIMEOUT_MS = 3_000;
 const cache = new Map<string, CachedPreview | FailedPreview>();
 
 function isHttpUrl(input?: string): input is string {
@@ -31,7 +32,7 @@ export async function ensureImagePreviewDownloaded(src?: string): Promise<void> 
 
   try {
     const res = await fetch(sourceUrl, {
-      signal: AbortSignal.timeout(6_000),
+      signal: AbortSignal.timeout(IMAGE_PREVIEW_FETCH_TIMEOUT_MS),
       headers: {
         Accept: "image/*",
         "User-Agent": "GoGet-ImagePreview/1.0",
@@ -70,13 +71,17 @@ export async function ensureImagePreviewDownloaded(src?: string): Promise<void> 
     cacheFailure();
   }
 }
+export function buildImagePreviewUrl(src?: string): string | undefined {
+  if (!isHttpUrl(src)) return src;
+  return `/api/images/preview?src=${encodeURIComponent(src)}`;
+}
 
 export async function getImagePreviewUrl(src?: string): Promise<string | undefined> {
   if (!isHttpUrl(src)) return src;
   await ensureImagePreviewDownloaded(src);
   const preview = cache.get(src);
   if (!preview || preview.expiresAt <= Date.now() || "failed" in preview) return src;
-  return `/api/images/preview?src=${encodeURIComponent(src)}`;
+  return buildImagePreviewUrl(src);
 }
 
 export async function getCachedImagePreview(
