@@ -60,6 +60,19 @@ function normalizeHttpUrl(value: string | undefined): string | null {
   }
 }
 
+function resolveStoreUrl(tags: Record<string, string>, fallbackMapsUrl: string): string {
+  const candidates = [
+    tags.website,
+    tags["contact:website"],
+    tags.url,
+    tags["contact:url"],
+  ];
+  for (const candidate of candidates) {
+    const normalized = normalizeHttpUrl(candidate);
+    if (normalized) return normalized;
+  }
+  return fallbackMapsUrl;
+}
 export function formatNearbyItems(input: {
   query: string;
   near: LatLng;
@@ -88,7 +101,7 @@ export function formatNearbyItems(input: {
     const address = buildAddress(tags);
     const city = tags["addr:city"] ?? tags["addr:town"] ?? tags["addr:suburb"] ?? "";
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-    const website = tags.website ?? tags["contact:website"] ?? mapsUrl;
+    const website = resolveStoreUrl(tags, mapsUrl);
 
     items.push({
       source: "nearby",

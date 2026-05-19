@@ -16,6 +16,7 @@
     "@goget/shared": "workspace:*",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.46.1",
+    "cheerio": "^1.1.2",
     "leaflet": "^1.9.4",
     "next": "14.2.16",
     "react": "^18.3.1",

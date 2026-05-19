@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { getClientIp, rateLimitHeaders, takeRateLimitToken } from "@/lib/server-rate-limit";
 import { parseJsonBody } from "@/app/api/_lib/validation";
-import { getImagePreviewUrl } from "@/lib/image-preview";
+import { buildImagePreviewUrl } from "@/lib/image-preview";
 import { fetchSourceSiteImage, normalizeHttpUrl } from "@/lib/source-site-image";
 
 const client = process.env.ANTHROPIC_API_KEY
@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
           item.pickupAddress
             ? geocodeAddress(item.pickupAddress, item.pickupCity ?? locationHint)
             : Promise.resolve(null),
-          fetchSourceSiteImage(item.externalUrl),
+          fetchSourceSiteImage(item.externalUrl, { query: `${item.title ?? query} ${item.merchantName ?? ""}` }),
         ]);
 
         const distanceKm =
@@ -200,9 +200,10 @@ export async function POST(req: NextRequest) {
               })()
             : undefined;
 
-        // Source image policy: only use real source-page images, then serve a proxied preview when possible.
+        // Source image policy: prefer retailer source-page images and then trusted image URLs from search output.
+        // If no retailer/source image exists, return undefined and let UI fallback placeholders handle it.
         const sourceImageUrl = sourceSiteImage ?? normalizeHttpUrl(item.imageUrl) ?? undefined;
-        const imageUrl = await getImagePreviewUrl(sourceImageUrl);
+        const imageUrl = buildImagePreviewUrl(sourceImageUrl);
 
         return {
           source: "web",
