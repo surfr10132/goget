@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import {
   GoSendAdapter, GrabAdapter, MidtransClient,
-  TokopediaAdapter, ShopeeAdapter, BukalapakAdapter,
+  TokopediaAdapter, ShopeeAdapter, BukalapakAdapter, GitHubCodeSearchAdapter,
 } from "@goget/shared/server";
 import { env } from "./env";
 
@@ -45,4 +45,9 @@ export const sourcingAdapters = [
   new TokopediaAdapter({ userAgent: env.SCRAPER_USER_AGENT }),
   new ShopeeAdapter({ userAgent: env.SCRAPER_USER_AGENT }),
   new BukalapakAdapter({ userAgent: env.SCRAPER_USER_AGENT }),
+  new GitHubCodeSearchAdapter({
+    token: env.GITHUB_SEARCH_TOKEN,
+    baseUrl: env.GITHUB_SEARCH_BASE_URL,
+    userAgent: env.SCRAPER_USER_AGENT,
+  }),
 ];

@@ -9,6 +9,7 @@ import {
 import { TokopediaAdapter } from "../sourcing/tokopedia";
 import { ShopeeAdapter } from "../sourcing/shopee";
 import { BukalapakAdapter } from "../sourcing/bukalapak";
+import { GitHubCodeSearchAdapter } from "../sourcing/github";
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -49,6 +50,80 @@ describe("createTokenBucket", () => {
     expect(sleeps.length).toBe(1);
     expect(sleeps[0]).toBeGreaterThanOrEqual(900);
     expect(sleeps[0]).toBeLessThanOrEqual(1100);
+  });
+});
+
+describe("GitHubCodeSearchAdapter", () => {
+  it("returns [] on schema failure", async () => {
+    const fakeFetch = vi.fn(async () => jsonResponse({ nope: true }));
+    vi.stubGlobal("fetch", fakeFetch);
+    await expect(new GitHubCodeSearchAdapter().search({ text: "oauth flow" })).resolves.toEqual([]);
+  });
+
+  it("attaches bearer auth and maps valid results", async () => {
+    const captured: { headers?: HeadersInit } = {};
+    const fakeFetch = vi.fn(async (_url: any, init: any) => {
+      captured.headers = init.headers;
+      return jsonResponse({
+        total_count: 1,
+        incomplete_results: false,
+        items: [
+          {
+            name: "auth.ts",
+            path: "src/auth.ts",
+            html_url: "https://github.com/acme/app/blob/main/src/auth.ts",
+            repository: {
+              id: 42,
+              full_name: "acme/app",
+              html_url: "https://github.com/acme/app",
+              description: "Main app",
+              owner: {
+                login: "acme",
+                avatar_url: "https://avatars.githubusercontent.com/u/1?v=4",
+              },
+            },
+          },
+        ],
+      });
+    });
+    vi.stubGlobal("fetch", fakeFetch);
+
+    const out = await new GitHubCodeSearchAdapter({ token: "token-123" }).search({ text: "oauth flow" });
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      source: "github",
+      externalId: "acme/app:src/auth.ts",
+      externalUrl: "https://github.com/acme/app/blob/main/src/auth.ts",
+      title: "acme/app/src/auth.ts",
+      merchantName: "acme",
+      merchantExternalId: "42",
+      pickupAddress: "acme/app",
+      priceIDR: 0,
+    });
+
+    const h = captured.headers as Record<string, string>;
+    expect(h.Authorization).toBe("Bearer token-123");
+    expect(h.Accept).toBe("application/vnd.github+json");
+  });
+
+  it("adds repo qualifier when referenceUrl is a GitHub repo URL", async () => {
+    const fakeFetch = vi.fn(async () =>
+      jsonResponse({
+        total_count: 0,
+        incomplete_results: false,
+        items: [],
+      }),
+    );
+    vi.stubGlobal("fetch", fakeFetch);
+
+    await new GitHubCodeSearchAdapter().search({
+      text: "rate limiter",
+      referenceUrl: "https://github.com/acme/platform",
+    });
+
+    const calledUrl = String((fakeFetch as any).mock.calls[0]?.[0] ?? "");
+    expect(calledUrl).toContain("repo%3Aacme%2Fplatform");
+    expect(calledUrl).toContain("in%3Afile");
   });
 });
 

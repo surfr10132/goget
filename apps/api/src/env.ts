@@ -28,6 +28,8 @@ const Schema = z.object({
 
   SCRAPER_USER_AGENT: z.string().default("GoGetBot/1.0"),
   SCRAPER_RATE_LIMIT_MS: z.coerce.number().default(1500),
+  GITHUB_SEARCH_TOKEN: z.string().optional(),
+  GITHUB_SEARCH_BASE_URL: z.string().url().default("https://api.github.com"),
   PII_ENCRYPTION_SECRET: z.string().min(32),
   PII_TOKENIZATION_SECRET: z.string().optional(),
   ORDER_JOBS_PROCESS_TOKEN: z.string().optional(),

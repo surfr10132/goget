@@ -34,7 +34,7 @@ const QuickOrderInput = z.object({
   item: z.object({
     title: z.string().min(1).max(300),
     itemPriceIDR: z.number().int().nonnegative(),
-    source: z.enum(["tokopedia", "shopee", "bukalapak", "directory", "manual"]).default("manual"),
+    source: z.enum(["tokopedia", "shopee", "bukalapak", "github", "directory", "manual"]).default("manual"),
     externalUrl: z.string().url().optional(),
     imageUrl: z.string().url().optional(),
     merchantName: z.string().optional(),
