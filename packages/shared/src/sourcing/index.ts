@@ -2,6 +2,7 @@ export * from "./types";
 export * from "./tokopedia";
 export * from "./shopee";
 export * from "./bukalapak";
+export * from "./github";
 export * from "./directory";
 export * from "./orchestrator";
 

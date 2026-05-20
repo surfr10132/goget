@@ -29,7 +29,7 @@ export type CourierProvider = z.infer<typeof CourierProvider>;
 export const CourierTier = z.enum(["instant", "sameday", "car_instant", "car_sameday"]);
 export type CourierTier = z.infer<typeof CourierTier>;
 
-export const SourceChannel = z.enum(["tokopedia", "shopee", "bukalapak", "directory", "manual"]);
+export const SourceChannel = z.enum(["tokopedia", "shopee", "bukalapak", "github", "directory", "manual"]);
 export type SourceChannel = z.infer<typeof SourceChannel>;
 
 export const OrderStatus = z.enum([

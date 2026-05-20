@@ -123,3 +123,25 @@ export const BukalapakProduct = z
 export const BukalapakResponse = z
   .object({ data: z.array(z.unknown()).default([]) })
   .strip();
+
+export const GitHubCodeSearchItem = z.object({
+  name: z.string(),
+  path: z.string(),
+  html_url: z.string().url(),
+  repository: z.object({
+    id: z.number(),
+    full_name: z.string(),
+    html_url: z.string().url(),
+    description: z.string().nullable().optional(),
+    owner: z.object({
+      login: z.string(),
+      avatar_url: z.string().url().optional(),
+    }).strip(),
+  }).strip(),
+}).strip();
+
+export const GitHubCodeSearchResponse = z.object({
+  total_count: z.number().int().nonnegative(),
+  incomplete_results: z.boolean().optional(),
+  items: z.array(z.unknown()).default([]),
+}).strip();
